@@ -11,8 +11,15 @@ export default async function handler(req, res) {
             return res.status(400).json({ success: false, error: "URL do Google Script não configurada nos Secrets (GOOGLE_SCRIPT_URL)." });
         }
 
-        const response = await axios.post(scriptUrl, req.body, {
-            headers: { "Content-Type": "application/json" }
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(req.body)) {
+            params.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
+        }
+
+        const response = await axios.post(scriptUrl, params.toString(), {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
         });
 
         res.status(200).json(response.data);
