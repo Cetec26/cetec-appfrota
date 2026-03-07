@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from "jwt-decode";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -97,6 +99,31 @@ export default function App() {
   const [showDestinoError, setShowDestinoError] = useState(false);
   const [kmError, setKmError] = useState(false);
   const [kmChegadaError, setKmChegadaError] = useState(false);
+
+  // Auth State
+  const [user, setUser] = useState<{ name: string, email: string, picture?: string } | null>(() => {
+    const saved = localStorage.getItem('cetec_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const handleLoginSuccess = (credentialResponse: any) => {
+    try {
+      if (credentialResponse.credential) {
+        const decoded = jwtDecode<{ name: string, email: string, picture: string }>(credentialResponse.credential);
+        const userData = { name: decoded.name, email: decoded.email, picture: decoded.picture };
+        setUser(userData);
+        localStorage.setItem('cetec_user', JSON.stringify(userData));
+      }
+    } catch (e) {
+      console.error("Login decode error", e);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('cetec_user');
+    setStep(1);
+  };
 
   // Get current date in YYYY-MM-DD format safely
   const getToday = () => {
@@ -387,6 +414,40 @@ export default function App() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 selection:bg-[#FFD700] selection:text-black">
+        <div className="w-full max-w-sm flex flex-col items-center">
+          <div className="flex flex-col items-center mb-10">
+            <div className="flex flex-col gap-1.5 items-center">
+              <div className="w-12 h-2.5 bg-white rounded-full"></div>
+              <div className="w-12 h-2.5 bg-[#FFD700] rounded-full"></div>
+              <div className="w-12 h-2.5 bg-white rounded-full"></div>
+            </div>
+            <p className="text-[10px] font-black tracking-[0.3em] text-white mt-2 uppercase">Engenharia</p>
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl w-full text-center space-y-6">
+            <div>
+              <h1 className="text-xl font-bold text-white mb-2">Acesso Restrito</h1>
+              <p className="text-sm text-zinc-400">Faça login com a sua conta Google para acessar o aplicativo da frota.</p>
+            </div>
+
+            <div className="flex justify-center pt-2">
+              <GoogleLogin
+                onSuccess={handleLoginSuccess}
+                onError={() => console.error('Falha no login do Google')}
+                theme="filled_black"
+                shape="pill"
+                size="large"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-[#FFD700] selection:text-black">
       <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
@@ -401,14 +462,23 @@ export default function App() {
               <p className="text-[7px] font-black tracking-[0.2em] text-white mt-1 uppercase">Engenharia</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-zinc-500">Passo {step} de 4</p>
-            <div className="w-24 h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
-              <div
-                className="h-full bg-[#FFD700]"
-                style={{ width: `${(step / 4) * 100}%` }}
-              />
+          <div className="flex flex-row items-center gap-4">
+            <div className="text-right">
+              <p className="text-xs text-zinc-500">Passo {step} de 4</p>
+              <div className="w-24 h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
+                <div
+                  className="h-full bg-[#FFD700]"
+                  style={{ width: `${(step / 4) * 100}%` }}
+                />
+              </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="w-10 h-10 rounded-full bg-black border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-[#FFD700] transition-colors"
+              title="Sair da Conta"
+            >
+              <User className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </header>
