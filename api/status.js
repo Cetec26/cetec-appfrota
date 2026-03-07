@@ -9,6 +9,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({
         configOk: !!scriptUrl,
-        sheetConnected: !!scriptUrl && scriptUrl.startsWith("https://script.google.com")
+        sheetConnected: !!scriptUrl && scriptUrl.startsWith("https://script.google.com"),
+        scriptUrl: scriptUrl || ""
     });
 }

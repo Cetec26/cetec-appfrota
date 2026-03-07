@@ -95,7 +95,7 @@ export default function App() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [status, setStatus] = useState<{ sheetConnected: boolean } | null>(null);
+  const [status, setStatus] = useState<{ sheetConnected: boolean, scriptUrl?: string } | null>(null);
   const [showDestinoError, setShowDestinoError] = useState(false);
   const [kmError, setKmError] = useState(false);
   const [kmChegadaError, setKmChegadaError] = useState(false);
@@ -233,36 +233,31 @@ export default function App() {
     setFuelingLoading(true);
     setFuelingSuccess(false);
     try {
-      const response = await fetch("/api/fueling", {
+      if (!status?.scriptUrl) {
+        throw new Error("URL do Google Script não configurada.");
+      }
+      const response = await fetch(status.scriptUrl, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...fuelingData,
-          km: cleanKmStr, // Envia o KM limpo (sem o 'a') para a planilha
+          type: "abastecimento",
+          km: cleanKmStr,
           data: formatDateToBR(getToday()),
           hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Erro desconhecido no servidor" }));
-        throw new Error(errorData.error || `Erro HTTP ${response.status}`);
-      }
+      // Local update assumption on no-cors
+      setLocalLastKm(prev => ({
+        ...prev,
+        [fuelingData.veiculo]: currentKm
+      }));
 
-      const data = await response.json();
-      if (data.success) {
-        // Atualiza o KM localmente para memorizar o novo valor
-        setLocalLastKm(prev => ({
-          ...prev,
-          [fuelingData.veiculo]: currentKm
-        }));
-
-        setFuelingSuccess(true);
-        setFuelingData({ veiculo: "", km: "", litros: "" });
-        setTimeout(() => setFuelingSuccess(false), 5000);
-      } else {
-        alert("Erro no Google Script: " + (data.error || "Erro desconhecido"));
-      }
+      setFuelingSuccess(true);
+      setFuelingData({ veiculo: "", km: "", litros: "" });
+      setTimeout(() => setFuelingSuccess(false), 5000);
     } catch (error: any) {
       alert("Falha no envio: " + error.message);
     } finally {
@@ -347,25 +342,26 @@ export default function App() {
     setKmChegadaError(false);
     setLoading(true);
     try {
+      if (!status?.scriptUrl) {
+        throw new Error("URL do Google Script não configurada.");
+      }
+
       const dataToSubmit = {
         ...formData,
         data_saida: formatDateToBR(formData.data_saida),
         data_retorno: formatDateToBR(formData.data_retorno)
       };
 
-      const response = await fetch("/api/submit", {
+      await fetch(status.scriptUrl, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSubmit),
       });
-      const data = await response.json();
-      if (data.success) {
-        setSuccess(true);
-      } else {
-        alert("Erro ao enviar: " + data.error);
-      }
+
+      setSuccess(true);
     } catch (error) {
-      alert("Erro de conexão com o servidor.");
+      alert("Erro ao conectar ao servidor. Tente novamente.");
     } finally {
       setLoading(false);
     }
