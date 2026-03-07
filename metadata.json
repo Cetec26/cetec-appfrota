@@ -1,0 +1,7 @@
+{
+  "name": "Cetec Engenharia - Viagens",
+  "description": "Aplicativo de controle de frota para motoristas da CETEC Engenharia com integração Google Sheets.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
