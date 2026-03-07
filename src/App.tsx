@@ -474,10 +474,14 @@ export default function App() {
             </div>
             <button
               onClick={handleLogout}
-              className="w-10 h-10 rounded-full bg-black border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-[#FFD700] transition-colors"
+              className="w-10 h-10 rounded-full bg-black border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-[#FFD700] transition-colors overflow-hidden"
               title="Sair da Conta"
             >
-              <User className="w-5 h-5" />
+              {user?.picture ? (
+                <img src={user.picture} alt="Perfil" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
