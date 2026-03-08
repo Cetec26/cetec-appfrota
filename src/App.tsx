@@ -237,9 +237,8 @@ export default function App() {
       if (!status?.scriptUrl) {
         throw new Error("URL do Google Script não configurada.");
       }
-      const response = await fetch(status.scriptUrl, {
+      const response = await fetch("/api/submit", {
         method: "POST",
-        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...fuelingData,
@@ -249,6 +248,10 @@ export default function App() {
           hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         }),
       });
+
+      if (!response.ok) {
+        throw new Error("Erro na API de abastecimento.");
+      }
 
       // Local update assumption on no-cors
       setLocalLastKm(prev => ({
@@ -350,15 +353,19 @@ export default function App() {
       const dataToSubmit = {
         ...formData,
         data_saida: formatDateToBR(formData.data_saida),
-        data_retorno: formatDateToBR(formData.data_retorno)
+        data_retorno: formatDateToBR(formData.data_retorno),
+        type: "viagem"
       };
 
-      await fetch(status.scriptUrl, {
+      const response = await fetch("/api/submit", {
         method: "POST",
-        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSubmit),
       });
+
+      if (!response.ok) {
+        throw new Error("Erro na API.");
+      }
 
       setSuccess(true);
     } catch (error) {
