@@ -379,10 +379,8 @@ export default function App() {
       }
     }
     if (step === 3) {
-      // Validação de Local Destino
-      const hasLetters = /[a-zA-Z]/.test(formData.local_destino);
-      const hasNumbers = /[0-9]/.test(formData.local_destino);
-      if (!hasLetters || !hasNumbers) {
+      // Validação simples de Local Destino (apenas não pode ser vazio)
+      if (!formData.local_destino.trim()) {
         setShowDestinoError(true);
         return;
       }
