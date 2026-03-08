@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, googleLogout } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
 
 function cn(...inputs: ClassValue[]) {
@@ -120,6 +120,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    googleLogout();
     setUser(null);
     localStorage.removeItem('cetec_user');
     setStep(1);
@@ -368,7 +369,7 @@ export default function App() {
   };
 
   const nextStep = () => {
-    if (step === 3) {
+    if (step === 2) {
       // Validação de KM
       const lastKm = localLastKm[formData.veiculo] || 0;
       const currentKm = parseFloat(formData.km_saida.replace(/\./g, '') || "0");
@@ -376,7 +377,8 @@ export default function App() {
         setKmError(true);
         return;
       }
-
+    }
+    if (step === 3) {
       // Validação de Local Destino
       const hasLetters = /[a-zA-Z]/.test(formData.local_destino);
       const hasNumbers = /[0-9]/.test(formData.local_destino);
@@ -415,12 +417,9 @@ export default function App() {
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 selection:bg-[#FFD700] selection:text-black">
         <div className="w-full max-w-sm flex flex-col items-center">
           <div className="flex flex-col items-center mb-10">
-            <div className="flex flex-col gap-1.5 items-center">
-              <div className="w-12 h-2.5 bg-white rounded-full"></div>
-              <div className="w-12 h-2.5 bg-[#FFD700] rounded-full"></div>
-              <div className="w-12 h-2.5 bg-white rounded-full"></div>
+            <div className="bg-white p-6 rounded-3xl flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+              <img src="/logo.png" alt="CETEC Engenharia" className="w-32 sm:w-40 h-auto" />
             </div>
-            <p className="text-[10px] font-black tracking-[0.3em] text-white mt-2 uppercase">Engenharia</p>
           </div>
 
           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl w-full text-center space-y-6">
@@ -450,12 +449,9 @@ export default function App() {
         <div className="max-w-xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center">
             <div className="flex flex-col items-center">
-              <div className="flex flex-col gap-1.5">
-                <div className="w-12 h-2.5 bg-white rounded-full"></div>
-                <div className="w-12 h-2.5 bg-[#FFD700] rounded-full"></div>
-                <div className="w-12 h-2.5 bg-white rounded-full"></div>
+              <div className="bg-white px-2 py-1.5 rounded-lg flex items-center justify-center">
+                <img src="/logo.png" alt="CETEC" className="h-7 w-auto" />
               </div>
-              <p className="text-[7px] font-black tracking-[0.2em] text-white mt-1 uppercase">Engenharia</p>
             </div>
           </div>
           <div className="flex flex-row items-center gap-4">
@@ -701,7 +697,7 @@ export default function App() {
               </div>
 
               <div className="space-y-4 pt-4 border-t border-zinc-800">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
                       <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Saída
@@ -871,7 +867,7 @@ export default function App() {
                     className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Local Saída</label>
                     <input
@@ -920,11 +916,11 @@ export default function App() {
                 </h2>
                 <p className="text-zinc-500 text-[11px]">Finalize o registro da sua viagem.</p>
               </div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 pt-4 border-t border-zinc-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                      <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Chegada
+                      <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Retorno
                     </label>
                     <input
                       type="date"
