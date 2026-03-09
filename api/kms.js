@@ -16,8 +16,13 @@ export default async function handler(req, res) {
             redirect: "follow"
         });
 
-        const result = await response.json();
-        res.status(200).json(result);
+        const responseText = await response.text();
+        try {
+            const result = JSON.parse(responseText);
+            res.status(200).json(result);
+        } catch (e) {
+            res.status(500).json({ success: false, error: "Retorno HTML ao invés de JSON", details: responseText });
+        }
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
