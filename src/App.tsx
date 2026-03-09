@@ -204,6 +204,18 @@ export default function App() {
     localStorage.setItem('cetec_last_km', JSON.stringify(localLastKm));
   }, [localLastKm]);
 
+  // Sincroniza KMs globais da frota pela API ao abrir o App
+  useEffect(() => {
+    fetch("/api/kms")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data) {
+          setLocalLastKm(prev => ({ ...prev, ...data.data }));
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   const handleFuelingSubmit = async () => {
     if (!fuelingData.veiculo || !fuelingData.km || !fuelingData.litros) {
       alert("Por favor, preencha todos os campos: Veículo, KM e Litros.");
