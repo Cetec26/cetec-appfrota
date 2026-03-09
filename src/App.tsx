@@ -192,7 +192,17 @@ export default function App() {
   const [fuelingAvgError, setFuelingAvgError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [localLastKm, setLocalLastKm] = useState<Record<string, number>>(LAST_KM_RECORDS);
+  const [localLastKm, setLocalLastKm] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem('cetec_last_km');
+      if (saved) return { ...LAST_KM_RECORDS, ...JSON.parse(saved) };
+    } catch { }
+    return LAST_KM_RECORDS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cetec_last_km', JSON.stringify(localLastKm));
+  }, [localLastKm]);
 
   const handleFuelingSubmit = async () => {
     if (!fuelingData.veiculo || !fuelingData.km || !fuelingData.litros) {
@@ -330,15 +340,22 @@ export default function App() {
   };
 
   const handleFinalSubmit = async () => {
-    const kmSaida = parseFloat(formData.km_saida.replace(/\./g, '') || "0");
-    const kmChegada = parseFloat(formData.km_chegada.replace(/\./g, '') || "0");
+    const rawKmSaida = formData.km_saida.trim().toLowerCase();
+    const isInitialSetSaida = rawKmSaida.endsWith('a');
+    const cleanKmSaidaStr = isInitialSetSaida ? rawKmSaida.slice(0, -1) : rawKmSaida;
+    const kmSaida = parseFloat(cleanKmSaidaStr.replace(/\./g, '') || "0");
+
+    const rawKmChegada = formData.km_chegada.trim().toLowerCase();
+    const isInitialSetChegada = rawKmChegada.endsWith('a');
+    const cleanKmChegadaStr = isInitialSetChegada ? rawKmChegada.slice(0, -1) : rawKmChegada;
+    const kmChegada = parseFloat(cleanKmChegadaStr.replace(/\./g, '') || "0");
 
     if (!formData.hora_retorno || !formData.km_chegada) {
       alert("Por favor, preencha a Hora de Retorno e o KM de Chegada.");
       return;
     }
 
-    if (kmChegada < kmSaida) {
+    if (!isInitialSetChegada && kmChegada < kmSaida) {
       setKmChegadaError(true);
       return;
     }
@@ -352,6 +369,8 @@ export default function App() {
 
       const dataToSubmit = {
         ...formData,
+        km_saida: cleanKmSaidaStr,
+        km_chegada: cleanKmChegadaStr,
         data_saida: formatDateToBR(formData.data_saida),
         data_retorno: formatDateToBR(formData.data_retorno),
         type: "viagem"
@@ -367,6 +386,11 @@ export default function App() {
         throw new Error("Erro na API.");
       }
 
+      setLocalLastKm(prev => ({
+        ...prev,
+        [formData.veiculo]: kmChegada
+      }));
+
       setSuccess(true);
     } catch (error) {
       alert("Erro ao conectar ao servidor. Tente novamente.");
@@ -378,9 +402,19 @@ export default function App() {
   const nextStep = () => {
     if (step === 2) {
       // Validação de KM
+      const rawKm = formData.km_saida.trim().toLowerCase();
+      const isInitialSet = rawKm.endsWith('a');
+      const cleanKmStr = isInitialSet ? rawKm.slice(0, -1) : rawKm;
+      const currentKm = parseFloat(cleanKmStr.replace(/\./g, '') || "0");
+
       const lastKm = localLastKm[formData.veiculo] || 0;
-      const currentKm = parseFloat(formData.km_saida.replace(/\./g, '') || "0");
-      if (formData.km_saida && currentKm < lastKm) {
+
+      if (formData.km_saida && isNaN(currentKm)) {
+        alert("KM de Saída inválido. Insira números ou use 'a' no final (ex: 700a).");
+        return;
+      }
+
+      if (formData.km_saida && !isInitialSet && currentKm < lastKm) {
         setKmError(true);
         return;
       }
