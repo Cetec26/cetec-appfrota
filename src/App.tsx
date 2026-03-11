@@ -139,6 +139,45 @@ export default function App() {
     }
   };
 
+  // Image Compression Helper
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimension
+          const MAX_SIZE = 1200;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG with 0.6 quality
+          resolve(canvas.toDataURL("image/jpeg", 0.6));
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const formatDateToBR = (dateStr: string) => {
     if (!dateStr) return "";
     const [year, month, day] = dateStr.split("-");
@@ -331,16 +370,16 @@ export default function App() {
     const remainingSlots = 5 - formData.fotos.length;
     const filesToProcess = Array.from(files).slice(0, remainingSlots);
 
-    filesToProcess.forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
+    filesToProcess.forEach(async (file: File) => {
+      try {
+        const base64String = await compressImage(file);
         setFormData(prev => ({
           ...prev,
           fotos: [...prev.fotos, base64String]
         }));
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Erro ao comprimir imagem:", error);
+      }
     });
   };
 
