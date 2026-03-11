@@ -311,7 +311,8 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error("Erro na API de abastecimento.");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro na API de abastecimento.");
       }
 
       // Local update assumption on no-cors
@@ -434,7 +435,8 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error("Erro na API.");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro na API.");
       }
 
       setLocalLastKm(prev => ({
@@ -443,8 +445,8 @@ export default function App() {
       }));
 
       setSuccess(true);
-    } catch (error) {
-      alert("Erro ao conectar ao servidor. Tente novamente.");
+    } catch (error: any) {
+      alert("Erro ao conectar ao servidor: " + error.message);
     } finally {
       setLoading(false);
     }

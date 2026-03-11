@@ -23,7 +23,15 @@ export default async function handler(req, res) {
         });
 
         const responseText = await response.text();
-        res.status(200).json({ success: true, text: responseText });
+        try {
+            const data = JSON.parse(responseText);
+            if (data.success === false) {
+                return res.status(400).json({ success: false, error: data.error });
+            }
+            res.status(200).json({ success: true, text: responseText, data });
+        } catch (e) {
+            res.status(500).json({ success: false, error: "Resposta inesperada do Google: " + responseText.substring(0, 100) });
+        }
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
