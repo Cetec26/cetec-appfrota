@@ -9,4 +9,14 @@
   body {
     @apply bg-black text-white antialiased;
   }
+  
+  /* Reset para inputs de data/hora no Safari/Chrome Mobile */
+  input[type="date"],
+  input[type="time"] {
+    min-height: 56px !important;
+    line-height: normal !important;
+    display: flex;
+    align-items: center;
+    -webkit-appearance: none;
+  }
 }

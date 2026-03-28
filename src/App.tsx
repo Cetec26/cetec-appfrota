@@ -92,7 +92,6 @@ const TRIP_REASONS = [
 ];
 
 export default function App() {
-  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [status, setStatus] = useState<{ sheetConnected: boolean, scriptUrl?: string } | null>(null);
@@ -123,7 +122,6 @@ export default function App() {
     googleLogout();
     setUser(null);
     localStorage.removeItem('cetec_user');
-    setStep(1);
   };
 
   // Get current date in YYYY-MM-DD format safely
@@ -262,18 +260,19 @@ export default function App() {
     }
 
     const rawKm = fuelingData.km.trim().toLowerCase();
-    const isInitialSet = rawKm.endsWith('a');
-    const cleanKmStr = isInitialSet ? rawKm.slice(0, -1) : rawKm;
-    const currentKm = parseFloat(cleanKmStr);
+    const isInitialSet = rawKm === 'zerar' || rawKm.endsWith('zerar');
+    const cleanKmStr = isInitialSet ? rawKm.replace('zerar', '').trim() || "0" : rawKm;
+    const currentKm = parseFloat(cleanKmStr.replace(/\./g, ''));
 
-    if (isNaN(currentKm)) {
-      alert("KM inválido. Por favor, insira apenas números (ex: 76100) ou use 'a' no final para definir o início (ex: 76100a).");
+    const kmForTest = cleanKmStr.replace(/\./g, '');
+    if (!/^\d+$/.test(kmForTest)) {
+      alert("KM inválido. O uso da letra 'a' não é mais permitido. Por favor, insira apenas números ou use 'zerar'.");
       return;
     }
 
     const lastKm = localLastKm[fuelingData.veiculo] || 0;
 
-    // Só valida se NÃO for o comando de "memorizar primeiro abastecimento" (sufixo 'a')
+    // Só valida se NÃO for o comando de "memorizar primeiro abastecimento" ('zerar')
     if (!isInitialSet && currentKm < lastKm) {
       setFuelingKmError(true);
       return;
@@ -392,27 +391,79 @@ export default function App() {
   };
 
   const handleFinalSubmit = async () => {
+    // Validation Logic that used to be in nextStep
+    if (formData.motorista) {
+      const cnhStatus = checkCNH(formData.motorista);
+      if (!cnhStatus.valid) {
+        alert("Sua CNH está vencida. Você não está autorizado a dirigir.");
+        return; // Optional: Stop submission here, or allow depending on requirements.
+      }
+    } else {
+      alert("Por favor, selecione um Motorista.");
+      return;
+    }
+
+    if (!formData.veiculo) {
+      alert("Por favor, selecione o Veículo.");
+      return;
+    }
+
+    if (!formData.km_saida.trim()) {
+      alert("Por favor, preencha o KM de Saída.");
+      return;
+    }
+
     const rawKmSaida = formData.km_saida.trim().toLowerCase();
-    const isInitialSetSaida = rawKmSaida.endsWith('a');
-    const cleanKmSaidaStr = isInitialSetSaida ? rawKmSaida.slice(0, -1) : rawKmSaida;
+    const isInitialSetSaida = rawKmSaida === 'zerar' || rawKmSaida.endsWith('zerar');
+    const cleanKmSaidaStr = isInitialSetSaida ? rawKmSaida.replace('zerar', '').trim() || "0" : rawKmSaida;
     const kmSaida = parseFloat(cleanKmSaidaStr.replace(/\./g, '') || "0");
 
+    const lastKm = localLastKm[formData.veiculo] || 0;
+
+    const kmSaidaForTest = cleanKmSaidaStr.replace(/\./g, '');
+    if (!/^\d+$/.test(kmSaidaForTest)) {
+      alert("KM de Saída inválido. A letra 'a' não é mais aceita. Insira números ou digite 'zerar' para reiniciar.");
+      return;
+    }
+
+    if (!isInitialSetSaida && kmSaida < lastKm) {
+      setKmError(true);
+      alert(`O KM de Saída não pode ser menor que o último registro (${lastKm.toLocaleString('pt-BR')}).`);
+      return;
+    }
+
+    if (!formData.local_destino.trim()) {
+      setShowDestinoError(true);
+      alert("Por favor, preencha o preencha Código da Obra / Local de Destino.");
+      return;
+    }
+
     const rawKmChegada = formData.km_chegada.trim().toLowerCase();
-    const isInitialSetChegada = rawKmChegada.endsWith('a');
-    const cleanKmChegadaStr = isInitialSetChegada ? rawKmChegada.slice(0, -1) : rawKmChegada;
+    const isInitialSetChegada = rawKmChegada === 'zerar' || rawKmChegada.endsWith('zerar');
+    const cleanKmChegadaStr = isInitialSetChegada ? rawKmChegada.replace('zerar', '').trim() || "0" : rawKmChegada;
     const kmChegada = parseFloat(cleanKmChegadaStr.replace(/\./g, '') || "0");
 
     if (!formData.hora_retorno || !formData.km_chegada) {
-      alert("Por favor, preencha a Hora de Retorno e o KM de Chegada.");
+      alert("Por favor, preencha a Hora de Retorno e o KM de Chegada para finalizar a viagem.");
+      return;
+    }
+
+    const kmChegadaForTest = cleanKmChegadaStr.replace(/\./g, '');
+    if (!/^\d+$/.test(kmChegadaForTest)) {
+      alert("KM de Chegada inválido. A letra 'a' não é mais aceita. Insira números ou digite 'zerar' para reiniciar.");
       return;
     }
 
     if (!isInitialSetChegada && kmChegada < kmSaida) {
       setKmChegadaError(true);
+      alert(`O KM de Chegada não pode ser menor que o KM de Saída (${kmSaida.toLocaleString('pt-BR')}).`);
       return;
     }
 
+    setKmError(false);
+    setShowDestinoError(false);
     setKmChegadaError(false);
+
     setLoading(true);
     try {
       if (!status?.scriptUrl) {
@@ -452,37 +503,6 @@ export default function App() {
     }
   };
 
-  const nextStep = () => {
-    if (step === 2) {
-      // Validação de KM
-      const rawKm = formData.km_saida.trim().toLowerCase();
-      const isInitialSet = rawKm.endsWith('a');
-      const cleanKmStr = isInitialSet ? rawKm.slice(0, -1) : rawKm;
-      const currentKm = parseFloat(cleanKmStr.replace(/\./g, '') || "0");
-
-      const lastKm = localLastKm[formData.veiculo] || 0;
-
-      if (formData.km_saida && isNaN(currentKm)) {
-        alert("KM de Saída inválido. Insira números ou use 'a' no final (ex: 700a).");
-        return;
-      }
-
-      if (formData.km_saida && !isInitialSet && currentKm < lastKm) {
-        setKmError(true);
-        return;
-      }
-    }
-    if (step === 3) {
-      // Validação simples de Local Destino (apenas não pode ser vazio)
-      if (!formData.local_destino.trim()) {
-        setShowDestinoError(true);
-        return;
-      }
-    }
-    setShowDestinoError(false);
-    setStep(s => Math.min(s + 1, 4));
-  };
-  const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
   if (success) {
     return (
@@ -548,13 +568,7 @@ export default function App() {
           </div>
           <div className="flex flex-row items-center gap-4">
             <div className="text-right">
-              <p className="text-xs text-zinc-500">Passo {step} de 4</p>
-              <div className="w-24 h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
-                <div
-                  className="h-full bg-[#FFD700]"
-                  style={{ width: `${(step / 4) * 100}%` }}
-                />
-              </div>
+              <p className="text-xs text-zinc-500 font-bold tracking-wider uppercase">Registro Único</p>
             </div>
             <button
               onClick={handleLogout}
@@ -582,7 +596,6 @@ export default function App() {
           </div>
         )}
 
-        {step === 1 && (
           <div className="space-y-6">
             {/* Módulo de Abastecimento Independente */}
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
@@ -600,7 +613,7 @@ export default function App() {
                       setFuelingKmError(false); // Limpa o erro ao trocar de veículo
                       setFuelingAvgError(false);
                     }}
-                    className="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
+                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
                   >
                     <option value="">Selecione o Veículo</option>
                     {VEHICLES.map(v => <option key={v} value={v}>{v}</option>)}
@@ -618,7 +631,7 @@ export default function App() {
                         setFuelingAvgError(false);
                       }}
                       className={cn(
-                        "w-full bg-black border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
+                        "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
                         (fuelingKmError || fuelingAvgError) ? "border-red-500" : "border-zinc-800"
                       )}
                     />
@@ -642,7 +655,7 @@ export default function App() {
                       setFuelingAvgError(false);
                     }}
                     className={cn(
-                      "w-full bg-black border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all h-fit",
+                      "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
                       fuelingAvgError ? "border-red-500" : "border-zinc-800"
                     )}
                   />
@@ -650,7 +663,7 @@ export default function App() {
                 <button
                   onClick={handleFuelingSubmit}
                   disabled={fuelingLoading || !fuelingData.veiculo || !fuelingData.km || !fuelingData.litros}
-                  className="w-full py-2.5 bg-[#FFD700] text-black font-bold rounded-xl hover:bg-[#e6c200] transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3 bg-[#FFD700] text-black font-bold rounded-xl hover:bg-[#e6c200] transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {fuelingLoading ? "Enviando..." : <><Send className="w-4 h-4" /> Enviar Abastecimento</>}
                 </button>
@@ -662,8 +675,7 @@ export default function App() {
                 )}
               </div>
             </div>
-
-            {/* Módulo de Viagem - Identificação */}
+            {/* Módulo de Viagem - Integrado */}
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
               <div className="bg-zinc-800/50 px-5 py-3 border-b border-zinc-800 flex items-center gap-2">
                 <Navigation className="w-4 h-4 text-[#FFD700]" />
@@ -692,7 +704,7 @@ export default function App() {
                           cnh_valida: status.text ? (status.valid ? "Sim" : "Não") : ""
                         });
                       }}
-                      className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
+                      className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
                     >
                       <option value="">Selecione o motorista</option>
                       {DRIVERS.map(d => <option key={d} value={d}>{d}</option>)}
@@ -731,422 +743,313 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
 
-        {step === 2 && (
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-            <div className="bg-zinc-800/50 px-5 py-3 border-b border-zinc-800 flex items-center gap-2">
-              <Navigation className="w-4 h-4 text-[#FFD700]" />
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Módulo de Viagem</h2>
-            </div>
-
-            <div className="p-5 space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-white">
-                  <Truck className="w-5 h-5 text-[#FFD700]" /> Veículo &amp; Checklist
-                </h2>
-                <p className="text-zinc-500 text-[11px]">Verifique as condições básicas de segurança.</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Modelo e Placa</label>
-                <select
-                  value={formData.veiculo}
-                  onChange={e => setFormData({ ...formData, veiculo: e.target.value })}
-                  className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
-                >
-                  <option value="">Selecione o veículo</option>
-                  {VEHICLES.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Checklist Pré-Viagem</label>
-                <div className="grid grid-cols-1 gap-2">
-                  {CHECKLIST_ITEMS.map(item => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => handleChecklist(item)}
-                      className={cn(
-                        "w-full p-3 rounded-xl border flex items-center gap-3 transition-all text-left",
-                        formData.checklist.includes(item)
-                          ? "bg-zinc-800 border-[#FFD700] text-white"
-                          : "bg-black border-zinc-800 text-zinc-500"
-                      )}
-                    >
-                      {formData.checklist.includes(item) ? (
-                        <CheckSquare className="w-4 h-4 text-[#FFD700]" />
-                      ) : (
-                        <Square className="w-4 h-4" />
-                      )}
-                      <span className="text-xs font-medium">{item}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-zinc-800">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                      <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Saída
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.data_saida}
-                      onChange={e => setFormData({ ...formData, data_saida: e.target.value })}
-                      className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                      <Clock className="w-4 h-4 text-[#FFD700]" /> Hora Saída
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.hora_saida}
-                      onChange={e => setFormData({ ...formData, hora_saida: e.target.value })}
-                      className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
-                    />
-                  </div>
-                </div>
+              {/* Veículo & Checklist */}
+              <div className="p-5 space-y-6 border-t border-zinc-800">
                 <div className="space-y-2">
-                  <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                    <MapPin className="w-4 h-4 text-[#FFD700]" /> KM Saída
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="000000"
-                    value={formData.km_saida}
-                    onChange={e => {
-                      setFormData({ ...formData, km_saida: e.target.value });
-                      setKmError(false);
-                    }}
-                    className={cn(
-                      "w-full bg-black border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
-                      kmError ? "border-red-500" : "border-zinc-800"
-                    )}
-                  />
-                  {kmError && (
-                    <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
-                      KM INCORRETO: MENOR QUE O ÚLTIMO REGISTRO ({localLastKm[formData.veiculo]?.toLocaleString('pt-BR')})
-                    </p>
-                  )}
+                  <h2 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-white">
+                    <Truck className="w-5 h-5 text-[#FFD700]" /> Veículo &amp; Checklist
+                  </h2>
+                  <p className="text-zinc-500 text-[11px]">Verifique as condições básicas de segurança.</p>
                 </div>
-              </div>
 
-              <div className="space-y-3 pt-4 border-t border-zinc-800">
-                <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Troca de Óleo</label>
-                {formData.veiculo ? (
-                  <div className="bg-black border border-zinc-800 rounded-xl p-4">
-                    <p className="text-[9px] font-bold text-[#FFD700] uppercase tracking-widest mb-3">Próxima Troca:</p>
-                    <div className="space-y-3">
-                      {OIL_REFERENCES.filter(ref => ref.vehicle === formData.veiculo).map(ref => {
-                        const nextKmStr = (ref.km || "").toString().replace(/\./g, '');
-                        const nextKm = parseFloat(nextKmStr);
-                        const currentKm = parseFloat(formData.km_saida || "0");
-                        const hasAlert = !isNaN(nextKm) && formData.km_saida !== "";
-                        const isUrgent = hasAlert && currentKm > nextKm;
-                        return (
-                          <div key={ref.vehicle} className="space-y-2">
-                            <div className="flex justify-between text-[10px]">
-                              <span className="text-zinc-400 font-medium">{ref.vehicle}</span>
-                              <span className="text-white font-bold">KM {ref.km}</span>
-                            </div>
-                            {hasAlert && (
-                              <div className={cn(
-                                "text-[9px] font-black uppercase tracking-widest p-2 rounded-lg text-center",
-                                isUrgent ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                              )}>
-                                {isUrgent ? "TROCA DE ÓLEO URGENTE" : "OK - AGUARDAR"}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-black/30 border border-dashed border-zinc-800 rounded-xl p-4 text-center">
-                    <p className="text-[10px] text-zinc-600 uppercase tracking-tighter">Selecione o veículo</p>
-                  </div>
-                )}
-                {(() => {
-                  const ref = OIL_REFERENCES.find(r => r.vehicle === formData.veiculo);
-                  if (!ref || !formData.km_saida) return null;
-                  const nextKm = parseFloat(ref.km.replace(/\./g, ''));
-                  const currentKm = parseFloat(formData.km_saida);
-                  const isUrgent = !isNaN(nextKm) && currentKm > nextKm;
+                <div className="space-y-2">
+                  <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Modelo e Placa</label>
+                  <select
+                    value={formData.veiculo}
+                    onChange={e => setFormData({ ...formData, veiculo: e.target.value })}
+                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
+                  >
+                    <option value="">Selecione o veículo</option>
+                    {VEHICLES.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </div>
 
-                  if (isUrgent) {
-                    return (
-                      <div className="bg-[#FFD700]/10 border border-[#FFD700]/20 p-3 rounded-xl">
-                        <p className="text-[#FFD700] font-black text-[10px] text-center leading-tight uppercase tracking-wide">
-                          USAR CARTÃO VALE CARD PARA TROCA ÓLEO E FILTRO
-                        </p>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-            <div className="bg-zinc-800/50 px-5 py-3 border-b border-zinc-800 flex items-center gap-2">
-              <Navigation className="w-4 h-4 text-[#FFD700]" />
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Módulo de Viagem</h2>
-            </div>
-
-            <div className="p-5 space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-white">
-                  <Navigation className="w-5 h-5 text-[#FFD700]" /> Detalhes da Viagem
-                </h2>
-                <p className="text-zinc-500 text-[11px]">Para onde vamos e qual o motivo?</p>
-              </div>
-              <div className="space-y-4">
                 <div className="space-y-3">
-                  <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Motivo da Viagem</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {TRIP_REASONS.map(reason => {
-                      const isSelected = formData.motivo.split(', ').includes(reason);
-                      return (
-                        <button
-                          key={reason}
-                          type="button"
-                          onClick={() => {
-                            const currentReasons = formData.motivo ? formData.motivo.split(', ') : [];
-                            const newReasons = isSelected
-                              ? currentReasons.filter(r => r !== reason)
-                              : [...currentReasons, reason];
-                            setFormData({ ...formData, motivo: newReasons.join(', ') });
-                          }}
-                          className={cn(
-                            "flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left text-xs font-medium",
-                            isSelected
-                              ? "bg-[#FFD700]/10 border-[#FFD700] text-[#FFD700]"
-                              : "bg-black border-zinc-800 text-zinc-500 hover:border-zinc-700"
-                          )}
-                        >
-                          <div className={cn(
-                            "w-3.5 h-3.5 rounded border-2 flex items-center justify-center transition-all",
-                            isSelected ? "bg-[#FFD700] border-[#FFD700]" : "border-zinc-700"
-                          )}>
-                            {isSelected && <Check className="w-2.5 h-2.5 text-black stroke-[4]" />}
-                          </div>
-                          {reason}
-                        </button>
-                      );
-                    })}
+                  <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Checklist Pré-Viagem</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {CHECKLIST_ITEMS.map(item => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => handleChecklist(item)}
+                        className={cn(
+                          "w-full p-3 rounded-xl border flex items-center gap-3 transition-all text-left",
+                          formData.checklist.includes(item)
+                            ? "bg-zinc-800 border-[#FFD700] text-white"
+                            : "bg-black border-zinc-800 text-zinc-500"
+                        )}
+                      >
+                        {formData.checklist.includes(item) ? (
+                          <CheckSquare className="w-4 h-4 text-[#FFD700]" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                        <span className="text-xs font-medium">{item}</span>
+                      </button>
+                    ))}
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Outro motivo..."
-                    value={formData.motivo.split(', ').filter(r => !TRIP_REASONS.includes(r)).join(', ')}
-                    onChange={e => {
-                      const predefined = formData.motivo.split(', ').filter(r => TRIP_REASONS.includes(r));
-                      const other = e.target.value;
-                      const combined = [...predefined, other].filter(Boolean).join(', ');
-                      setFormData({ ...formData, motivo: combined });
-                    }}
-                    className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
-                  />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                <div className="space-y-4 pt-4 border-t border-zinc-800">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Local Saída</label>
+                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                      <MapPin className="w-4 h-4 text-[#FFD700]" /> Código da Obra / Local de Destino
+                    </label>
                     <input
                       type="text"
-                      value={formData.local_saida}
-                      onChange={e => setFormData({ ...formData, local_saida: e.target.value })}
-                      className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Local Destino</label>
-                    <input
-                      type="text"
-                      placeholder="Cód. Obra / Cidade"
+                      placeholder="Ex: Obra 123 ou Cidade X"
                       value={formData.local_destino}
                       onChange={e => {
                         setFormData({ ...formData, local_destino: e.target.value });
                         setShowDestinoError(false);
                       }}
                       className={cn(
-                        "w-full bg-black border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
+                        "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
                         showDestinoError ? "border-red-500" : "border-zinc-800"
                       )}
                     />
                     {showDestinoError && (
-                      <p className="text-red-500 font-bold text-[9px] uppercase tracking-widest">FAVOR PREENCHER CÓDIGO DA OBRA</p>
+                      <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
+                        PREENCHIMENTO OBRIGATÓRIO
+                      </p>
                     )}
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-            <div className="bg-zinc-800/50 px-5 py-3 border-b border-zinc-800 flex items-center gap-2">
-              <Navigation className="w-4 h-4 text-[#FFD700]" />
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Módulo de Viagem</h2>
-            </div>
-
-            <div className="p-5 space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-white">
-                  <CheckCircle2 className="w-5 h-5 text-[#FFD700]" /> Retorno & Avarias
-                </h2>
-                <p className="text-zinc-500 text-[11px]">Finalize o registro da sua viagem.</p>
-              </div>
-              <div className="space-y-4 pt-4 border-t border-zinc-800">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                      <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Retorno
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.data_retorno}
-                      onChange={e => setFormData({ ...formData, data_retorno: e.target.value })}
-                      className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                        <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Saída
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.data_saida}
+                        onChange={e => setFormData({ ...formData, data_saida: e.target.value })}
+                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                        <Clock className="w-4 h-4 text-[#FFD700]" /> Hora Saída
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.hora_saida}
+                        onChange={e => setFormData({ ...formData, hora_saida: e.target.value })}
+                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                      <Clock className="w-4 h-4 text-[#FFD700]" /> Hora Chegada
+                      <MapPin className="w-4 h-4 text-[#FFD700]" /> KM Saída
                     </label>
                     <input
-                      type="time"
-                      value={formData.hora_retorno}
-                      onChange={e => setFormData({ ...formData, hora_retorno: e.target.value })}
-                      className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
+                      type="text"
+                      placeholder="000000"
+                      value={formData.km_saida}
+                      onChange={e => {
+                        setFormData({ ...formData, km_saida: e.target.value });
+                        setKmError(false);
+                      }}
+                      className={cn(
+                        "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
+                        kmError ? "border-red-500" : "border-zinc-800"
+                      )}
                     />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                    <MapPin className="w-4 h-4 text-[#FFD700]" /> KM Chegada
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="000000"
-                    value={formData.km_chegada}
-                    onChange={e => {
-                      setFormData({ ...formData, km_chegada: e.target.value });
-                      setKmChegadaError(false);
-                    }}
-                    className={cn(
-                      "w-full bg-black border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
-                      kmChegadaError ? "border-red-500" : "border-zinc-800"
+                    {kmError && (
+                      <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
+                        KM INCORRETO: MENOR QUE O ÚLTIMO REGISTRO ({localLastKm[formData.veiculo]?.toLocaleString('pt-BR')})
+                      </p>
                     )}
-                  />
-                  {kmChegadaError && (
-                    <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
-                      KM DE CHEGADA NÃO PODE SER MENOR QUE O DE SAÍDA ({parseFloat(formData.km_saida).toLocaleString('pt-BR')})
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                    <AlertTriangle className="w-4 h-4 text-[#FFD700]" /> Avarias Identificadas?
-                  </label>
-                  <textarea
-                    placeholder="Descreva qualquer problema ou 'Não' se estiver tudo ok."
-                    value={formData.avaria}
-                    onChange={e => setFormData({ ...formData, avaria: e.target.value })}
-                    className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all min-h-[80px]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                    <Camera className="w-4 h-4 text-[#FFD700]" /> Fotos (Opcional)
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    multiple
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                  />
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-zinc-800 rounded-xl p-8 text-center hover:border-[#FFD700] transition-colors cursor-pointer group bg-black"
-                  >
-                    <Camera className="w-8 h-8 text-zinc-700 mx-auto mb-2 group-hover:text-[#FFD700] transition-colors" />
-                    <p className="text-[10px] text-zinc-600 uppercase tracking-widest">Toque para tirar até 5 fotos</p>
                   </div>
+                </div>
 
-                  {formData.fotos.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2 mt-4">
-                      {formData.fotos.map((foto, idx) => (
-                        <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-zinc-800 group">
-                          <img src={foto} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFoto(idx);
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <AlertTriangle className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
+                {/* Troca de Óleo */}
+                <div className="space-y-3 pt-4 border-t border-zinc-800">
+                  <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Troca de Óleo</label>
+                  {formData.veiculo ? (
+                    <div className="bg-black border border-zinc-800 rounded-xl p-4">
+                      <p className="text-[9px] font-bold text-[#FFD700] uppercase tracking-widest mb-3">Próxima Troca:</p>
+                      <div className="space-y-3">
+                        {OIL_REFERENCES.filter(ref => ref.vehicle === formData.veiculo).map(ref => {
+                          const nextKmStr = (ref.km || "").toString().replace(/\./g, '');
+                          const nextKm = parseFloat(nextKmStr);
+                          const currentKm = parseFloat(formData.km_saida || "0");
+                          const hasAlert = !isNaN(nextKm) && formData.km_saida !== "";
+                          const isUrgent = hasAlert && currentKm > nextKm;
+                          return (
+                            <div key={ref.vehicle} className="space-y-2">
+                              <div className="flex justify-between text-[10px]">
+                                <span className="text-zinc-400 font-medium">{ref.vehicle}</span>
+                                <span className="text-white font-bold">KM {ref.km}</span>
+                              </div>
+                              {hasAlert && (
+                                <div className={cn(
+                                  "text-[9px] font-black uppercase tracking-widest p-2 rounded-lg text-center",
+                                  isUrgent ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                )}>
+                                  {isUrgent ? "TROCA DE ÓLEO URGENTE" : "OK - AGUARDAR"}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-black/30 border border-dashed border-zinc-800 rounded-xl p-4 text-center">
+                      <p className="text-[10px] text-zinc-600 uppercase tracking-tighter">Selecione o veículo</p>
                     </div>
                   )}
+                  {(() => {
+                    const ref = OIL_REFERENCES.find(r => r.vehicle === formData.veiculo);
+                    if (!ref || !formData.km_saida) return null;
+                    const nextKm = parseFloat(ref.km.replace(/\./g, ''));
+                    const currentKm = parseFloat(formData.km_saida);
+                    const isUrgent = !isNaN(nextKm) && currentKm > nextKm;
+
+                    if (isUrgent) {
+                      return (
+                        <div className="bg-[#FFD700]/10 border border-[#FFD700]/20 p-3 rounded-xl">
+                          <p className="text-[#FFD700] font-black text-[10px] text-center leading-tight uppercase tracking-wide">
+                            USAR CARTÃO VALE CARD PARA TROCA ÓLEO E FILTRO
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+
+              {/* Retorno & Avarias */}
+              <div className="p-5 space-y-6 border-t border-zinc-800">
+                <div className="space-y-2">
+                  <h2 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-white">
+                    <CheckCircle2 className="w-5 h-5 text-[#FFD700]" /> Retorno & Avarias
+                  </h2>
+                  <p className="text-zinc-500 text-[11px]">Finalize o registro da sua viagem.</p>
+                </div>
+                <div className="space-y-4 pt-4 border-t border-zinc-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                        <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Retorno
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.data_retorno}
+                        onChange={e => setFormData({ ...formData, data_retorno: e.target.value })}
+                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                        <Clock className="w-4 h-4 text-[#FFD700]" /> Hora Chegada
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.hora_retorno}
+                        onChange={e => setFormData({ ...formData, hora_retorno: e.target.value })}
+                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                      <MapPin className="w-4 h-4 text-[#FFD700]" /> KM Chegada
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="000000"
+                      value={formData.km_chegada}
+                      onChange={e => {
+                        setFormData({ ...formData, km_chegada: e.target.value });
+                        setKmChegadaError(false);
+                      }}
+                      className={cn(
+                        "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
+                        kmChegadaError ? "border-red-500" : "border-zinc-800"
+                      )}
+                    />
+                    {kmChegadaError && (
+                      <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
+                        KM DE CHEGADA NÃO PODE SER MENOR QUE O DE SAÍDA ({parseFloat(formData.km_saida).toLocaleString('pt-BR')})
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                      <AlertTriangle className="w-4 h-4 text-[#FFD700]" /> Avarias Identificadas?
+                    </label>
+                    <textarea
+                      placeholder="Descreva qualquer problema ou 'Não' se estiver tudo ok."
+                      value={formData.avaria}
+                      onChange={e => setFormData({ ...formData, avaria: e.target.value })}
+                      className="w-full bg-black border border-zinc-800 rounded-xl px-4 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all min-h-[80px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                      <Camera className="w-4 h-4 text-[#FFD700]" /> Fotos (Opcional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      multiple
+                      className="hidden"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                    />
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-zinc-800 rounded-xl p-8 text-center hover:border-[#FFD700] transition-colors cursor-pointer group bg-black"
+                    >
+                      <Camera className="w-8 h-8 text-zinc-700 mx-auto mb-2 group-hover:text-[#FFD700] transition-colors" />
+                      <p className="text-[10px] text-zinc-600 uppercase tracking-widest">Toque para tirar até 5 fotos</p>
+                    </div>
+
+                    {formData.fotos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-4">
+                        {formData.fotos.map((foto, idx) => (
+                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-zinc-800 group">
+                            <img src={foto} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFoto(idx);
+                              }}
+                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <AlertTriangle className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </main>
 
-        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-lg border-t border-zinc-800 p-6">
+        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-lg border-t border-zinc-800 p-6 z-50">
           <div className="max-w-xl mx-auto flex flex-col gap-4">
             <div className="flex gap-4">
-              {step > 1 && (
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="flex-1 py-3 bg-zinc-800 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-700 transition-transform active:scale-95"
-                >
-                  <ChevronLeft className="w-5 h-5" /> Voltar
-                </button>
-              )}
-              {step < 4 ? (
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  disabled={step === 1 && !formData.motorista}
-                  className="flex-[2] py-3 bg-[#FFD700] text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-[#e6c200] transition-transform active:scale-95 disabled:opacity-50"
-                >
-                  Próximo <ChevronRight className="w-5 h-5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleFinalSubmit}
-                  disabled={loading || (status && !status.sheetConnected)}
-                  className="flex-[2] py-3 bg-[#FFD700] text-black font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-[#e6c200] transition-transform active:scale-95 disabled:opacity-50"
-                >
-                  {loading ? "Enviando..." : (
-                    <>Finalizar e Enviar <Send className="w-5 h-5" /></>
-                  )}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleFinalSubmit}
+                disabled={loading || (status && !status.sheetConnected)}
+                className="flex-1 h-14 bg-[#FFD700] text-black font-bold text-lg rounded-xl flex items-center justify-center gap-3 hover:bg-[#e6c200] transition-transform active:scale-95 disabled:opacity-50"
+              >
+                {loading ? "Processando e Enviando..." : (
+                  <>Finalizar e Registrar Viagem <Send className="w-6 h-6" /></>
+                )}
+              </button>
             </div>
             <div className="flex items-center justify-center gap-2">
               {status?.sheetConnected ? (
@@ -1161,7 +1064,6 @@ export default function App() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  );
-}
+      </div>
+    );
+  }
