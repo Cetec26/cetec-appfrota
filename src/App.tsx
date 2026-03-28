@@ -244,6 +244,7 @@ export default function App() {
   });
 
   const [fuelingData, setFuelingData] = useState({
+    motorista: "",
     veiculo: "",
     km: "",
     litros: ""
@@ -301,8 +302,8 @@ export default function App() {
   }, []);
 
   const handleFuelingSubmit = async () => {
-    if (!fuelingData.veiculo || !fuelingData.km || !fuelingData.litros) {
-      alert("Por favor, preencha todos os campos: Veículo, KM e Litros.");
+    if (!fuelingData.motorista || !fuelingData.veiculo || !fuelingData.km || !fuelingData.litros) {
+      alert("Por favor, preencha todos os campos: Motorista, Veículo, KM e Litros.");
       return;
     }
 
@@ -350,6 +351,8 @@ export default function App() {
         body: JSON.stringify({
           ...fuelingData,
           type: "abastecimento",
+          usuario_logado: user?.name || "Desconhecido",
+          email_logado: user?.email || "desconhecido@cetec.com",
           km: cleanKmStr,
           data: formatDateToBR(getToday()),
           hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -368,7 +371,7 @@ export default function App() {
       }));
 
       setFuelingSuccess(true);
-      setFuelingData({ veiculo: "", km: "", litros: "" });
+      setFuelingData({ motorista: "", veiculo: "", km: "", litros: "" });
       setTimeout(() => setFuelingSuccess(false), 5000);
     } catch (error: any) {
       alert("Falha no envio: " + error.message);
@@ -654,6 +657,17 @@ export default function App() {
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-1 gap-3">
                   <select
+                    value={fuelingData.motorista}
+                    onChange={e => {
+                      setFuelingData({ ...fuelingData, motorista: e.target.value });
+                    }}
+                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
+                  >
+                    <option value="">Selecione o Motorista</option>
+                    {driversList.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+
+                  <select
                     value={fuelingData.veiculo}
                     onChange={e => {
                       setFuelingData({ ...fuelingData, veiculo: e.target.value });
@@ -709,7 +723,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={handleFuelingSubmit}
-                  disabled={fuelingLoading || !fuelingData.veiculo || !fuelingData.km || !fuelingData.litros}
+                  disabled={fuelingLoading || !fuelingData.motorista || !fuelingData.veiculo || !fuelingData.km || !fuelingData.litros}
                   className="w-full py-3 bg-[#FFD700] text-black font-bold rounded-xl hover:bg-[#e6c200] transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {fuelingLoading ? "Enviando..." : <><Send className="w-4 h-4" /> Enviar Abastecimento</>}
