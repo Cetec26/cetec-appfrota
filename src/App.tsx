@@ -308,7 +308,7 @@ export default function App() {
     }
 
     const rawKm = fuelingData.km.trim().toLowerCase();
-    const isInitialSet = rawKm === 'zerar' || rawKm.endsWith('zerar');
+    const isInitialSet = rawKm === 'zerar' || rawKm.includes('zerar');
     const cleanKmStr = isInitialSet ? rawKm.replace('zerar', '').trim() || "0" : rawKm;
     const currentKm = parseFloat(cleanKmStr.replace(/\./g, ''));
 
@@ -464,7 +464,7 @@ export default function App() {
     }
 
     const rawKmSaida = formData.km_saida.trim().toLowerCase();
-    const isInitialSetSaida = rawKmSaida === 'zerar' || rawKmSaida.endsWith('zerar');
+    const isInitialSetSaida = rawKmSaida === 'zerar' || rawKmSaida.includes('zerar');
     const cleanKmSaidaStr = isInitialSetSaida ? rawKmSaida.replace('zerar', '').trim() || "0" : rawKmSaida;
     const kmSaida = parseFloat(cleanKmSaidaStr.replace(/\./g, '') || "0");
 
@@ -489,7 +489,7 @@ export default function App() {
     }
 
     const rawKmChegada = formData.km_chegada.trim().toLowerCase();
-    const isInitialSetChegada = rawKmChegada === 'zerar' || rawKmChegada.endsWith('zerar');
+    const isInitialSetChegada = rawKmChegada === 'zerar' || rawKmChegada.includes('zerar');
     const cleanKmChegadaStr = isInitialSetChegada ? rawKmChegada.replace('zerar', '').trim() || "0" : rawKmChegada;
     const kmChegada = parseFloat(cleanKmChegadaStr.replace(/\./g, '') || "0");
 
