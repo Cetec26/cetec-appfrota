@@ -28,7 +28,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const DRIVERS = [
+const INITIAL_DRIVERS = [
   "Alexsandro Felipe Demetrio",
   "André Luis de Andrade",
   "Gregory Matheus Maia Carnaval",
@@ -42,7 +42,7 @@ const DRIVERS = [
   "Michael Jones da Silva de Camargo"
 ].sort();
 
-const DRIVER_EXPIRATIONS: Record<string, string> = {
+const INITIAL_DRIVER_EXPIRATIONS: Record<string, string> = {
   "Alexsandro Felipe Demetrio": "2031-09-30",
   "André Luis de Andrade": "2024-10-17",
   "Gregory Matheus Maia Carnaval": "2034-02-05",
@@ -98,6 +98,22 @@ export default function App() {
   const [showDestinoError, setShowDestinoError] = useState(false);
   const [kmError, setKmError] = useState(false);
   const [kmChegadaError, setKmChegadaError] = useState(false);
+
+  const [driversList, setDriversList] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('cetec_drivers_list');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return INITIAL_DRIVERS;
+  });
+
+  const [driverExpirations, setDriverExpirations] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('cetec_driver_expirations');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return INITIAL_DRIVER_EXPIRATIONS;
+  });
 
   // Auth State
   const [user, setUser] = useState<{ name: string, email: string, picture?: string } | null>(() => {
@@ -183,12 +199,21 @@ export default function App() {
     return `${day}/${month}/${year}`;
   };
 
-  const checkCNH = (driverName: string) => {
+  const checkCNH = (driverName: string, customExps?: Record<string, string>) => {
     if (!driverName) return { valid: false, text: "" };
-    const exp = DRIVER_EXPIRATIONS[driverName];
+    const expsObj = customExps || driverExpirations;
+    const exp = expsObj[driverName];
     if (!exp) return { valid: false, text: "DADOS DE CNH NÃO ENCONTRADOS" };
 
-    const expDate = new Date(exp + "T00:00:00");
+    let expDate;
+    if (exp.includes('/')) {
+      const parts = exp.split('/');
+      // Assume DD/MM/YYYY format if it has slashes
+      expDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`);
+    } else {
+      expDate = new Date(exp + "T00:00:00");
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -248,6 +273,28 @@ export default function App() {
       .then(data => {
         if (data && data.success && data.data) {
           setLocalLastKm(prev => ({ ...prev, ...data.data }));
+        }
+      })
+      .catch(console.error);
+
+    fetch("/api/drivers")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data) {
+          const expirations = data.data;
+          const validNames = Object.keys(expirations).filter(n => n.trim() !== "").sort();
+          if (validNames.length > 0) {
+            setDriverExpirations(expirations);
+            setDriversList(validNames);
+            localStorage.setItem('cetec_driver_expirations', JSON.stringify(expirations));
+            localStorage.setItem('cetec_drivers_list', JSON.stringify(validNames));
+
+            setFormData(prev => {
+              if (!prev.motorista) return prev;
+              const status = checkCNH(prev.motorista, expirations);
+              return { ...prev, cnh_valida: status.text ? (status.valid ? "Sim" : "Não") : "" };
+            });
+          }
         }
       })
       .catch(console.error);
@@ -707,7 +754,7 @@ export default function App() {
                       className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
                     >
                       <option value="">Selecione o motorista</option>
-                      {DRIVERS.map(d => <option key={d} value={d}>{d}</option>)}
+                      {driversList.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
 
