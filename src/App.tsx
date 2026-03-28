@@ -266,11 +266,7 @@ export default function App() {
 
     const kmForTest = cleanKmStr.replace(/\./g, '');
     if (!/^\d+$/.test(kmForTest)) {
-      if (kmForTest.includes('a')) {
-        alert("Aceita apenas números");
-      } else {
-        alert("Não permitido letras, apenas números");
-      }
+      alert("Não permitido letras, apenas números");
       return;
     }
 
@@ -426,11 +422,7 @@ export default function App() {
 
     const kmSaidaForTest = cleanKmSaidaStr.replace(/\./g, '');
     if (!/^\d+$/.test(kmSaidaForTest)) {
-      if (kmSaidaForTest.includes('a')) {
-        alert("Aceita apenas números");
-      } else {
-        alert("Não permitido letras, apenas números");
-      }
+      alert("Não permitido letras, apenas números");
       return;
     }
 
@@ -458,11 +450,7 @@ export default function App() {
 
     const kmChegadaForTest = cleanKmChegadaStr.replace(/\./g, '');
     if (!/^\d+$/.test(kmChegadaForTest)) {
-      if (kmChegadaForTest.includes('a')) {
-        alert("Aceita apenas números");
-      } else {
-        alert("Não permitido letras, apenas números");
-      }
+      alert("Não permitido letras, apenas números");
       return;
     }
 
