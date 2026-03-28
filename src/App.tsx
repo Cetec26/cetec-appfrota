@@ -266,7 +266,11 @@ export default function App() {
 
     const kmForTest = cleanKmStr.replace(/\./g, '');
     if (!/^\d+$/.test(kmForTest)) {
-      alert("KM inválido. O uso da letra 'a' não é mais permitido. Por favor, insira apenas números ou use 'zerar'.");
+      if (kmForTest.includes('a')) {
+        alert("A letra 'a' não é mais aceita. Insira números ou digite 'zerar'");
+      } else {
+        alert("Não permitido letras, apenas números");
+      }
       return;
     }
 
@@ -422,7 +426,11 @@ export default function App() {
 
     const kmSaidaForTest = cleanKmSaidaStr.replace(/\./g, '');
     if (!/^\d+$/.test(kmSaidaForTest)) {
-      alert("KM de Saída inválido. A letra 'a' não é mais aceita. Insira números ou digite 'zerar' para reiniciar.");
+      if (kmSaidaForTest.includes('a')) {
+        alert("A letra 'a' não é mais aceita. Insira números ou digite 'zerar'");
+      } else {
+        alert("Não permitido letras, apenas números");
+      }
       return;
     }
 
@@ -450,7 +458,11 @@ export default function App() {
 
     const kmChegadaForTest = cleanKmChegadaStr.replace(/\./g, '');
     if (!/^\d+$/.test(kmChegadaForTest)) {
-      alert("KM de Chegada inválido. A letra 'a' não é mais aceita. Insira números ou digite 'zerar' para reiniciar.");
+      if (kmChegadaForTest.includes('a')) {
+        alert("A letra 'a' não é mais aceita. Insira números ou digite 'zerar'");
+      } else {
+        alert("Não permitido letras, apenas números");
+      }
       return;
     }
 
