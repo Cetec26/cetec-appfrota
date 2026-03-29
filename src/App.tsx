@@ -77,7 +77,7 @@ const LAST_KM_RECORDS: Record<string, number> = {
   "Strada Endurance SDP4I02": 76000
 };
 
-const OIL_REFERENCES = [
+const INITIAL_OIL_REFERENCES = [
   { vehicle: "Uno AID8C51", km: "310.483" },
   { vehicle: "Strada Simples QPS9I59", km: "186.740" },
   { vehicle: "Strada CD AZL5B65", km: "131.550" },
@@ -113,6 +113,14 @@ export default function App() {
       if (saved) return JSON.parse(saved);
     } catch { }
     return INITIAL_DRIVER_EXPIRATIONS;
+  });
+
+  const [oilReferences, setOilReferences] = useState<{vehicle: string, km: string}[]>(() => {
+    try {
+      const saved = localStorage.getItem('cetec_oil_refs');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return INITIAL_OIL_REFERENCES;
   });
 
   // Auth State
@@ -299,6 +307,16 @@ export default function App() {
         }
       })
       .catch(console.error);
+
+    fetch("/api/oil")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data) {
+          setOilReferences(data.data);
+          localStorage.setItem('cetec_oil_refs', JSON.stringify(data.data));
+        }
+      })
+      .catch(console.error);
   }, []);
 
   const handleFuelingSubmit = async () => {
@@ -387,9 +405,8 @@ export default function App() {
       .catch(() => setStatus({ sheetConnected: false }));
   }, []);
 
-  // Auto-update troca_oleo status based on KM
   useEffect(() => {
-    const ref = OIL_REFERENCES.find(r => r.vehicle === formData.veiculo);
+    const ref = oilReferences.find(r => r.vehicle === formData.veiculo);
     if (ref && formData.km_saida) {
       const nextKm = parseFloat(ref.km.replace(/\./g, ''));
       const currentKm = parseFloat(formData.km_saida);
@@ -932,7 +949,7 @@ export default function App() {
                     <div className="bg-black border border-zinc-800 rounded-xl p-4">
                       <p className="text-[9px] font-bold text-[#FFD700] uppercase tracking-widest mb-3">Próxima Troca:</p>
                       <div className="space-y-3">
-                        {OIL_REFERENCES.filter(ref => ref.vehicle === formData.veiculo).map(ref => {
+                        {oilReferences.filter(ref => ref.vehicle === formData.veiculo).map(ref => {
                           const nextKmStr = (ref.km || "").toString().replace(/\./g, '');
                           const nextKm = parseFloat(nextKmStr);
                           const currentKm = parseFloat(formData.km_saida || "0");
@@ -963,7 +980,7 @@ export default function App() {
                     </div>
                   )}
                   {(() => {
-                    const ref = OIL_REFERENCES.find(r => r.vehicle === formData.veiculo);
+                    const ref = oilReferences.find(r => r.vehicle === formData.veiculo);
                     if (!ref || !formData.km_saida) return null;
                     const nextKm = parseFloat(ref.km.replace(/\./g, ''));
                     const currentKm = parseFloat(formData.km_saida);
