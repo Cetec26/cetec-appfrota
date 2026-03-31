@@ -999,119 +999,130 @@ export default function App() {
                   </select>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Checklist Pré-Viagem</label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {CHECKLIST_ITEMS.map(item => (
+                {vehicleStatus[formData.veiculo] !== 'em_viagem' ? (
+                  <>
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Checklist Pré-Viagem</label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {CHECKLIST_ITEMS.map(item => (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => handleChecklist(item)}
+                            className={cn(
+                              "w-full p-3 rounded-xl border flex items-center gap-3 transition-all text-left",
+                              formData.checklist.includes(item)
+                                ? "bg-zinc-800 border-[#FFD700] text-white"
+                                : "bg-black border-zinc-800 text-zinc-500"
+                            )}
+                          >
+                            {formData.checklist.includes(item) ? (
+                              <CheckSquare className="w-4 h-4 text-[#FFD700]" />
+                            ) : (
+                              <Square className="w-4 h-4" />
+                            )}
+                            <span className="text-xs font-medium">{item}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-zinc-800">
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                          <MapPin className="w-4 h-4 text-[#FFD700]" /> Código da Obra / Local de Destino
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Obra 123 ou Cidade X"
+                          value={formData.local_destino}
+                          onChange={e => {
+                            setFormData({ ...formData, local_destino: e.target.value });
+                            setShowDestinoError(false);
+                          }}
+                          className={cn(
+                            "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
+                            showDestinoError ? "border-red-500" : "border-zinc-800"
+                          )}
+                        />
+                        {showDestinoError && (
+                          <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
+                            PREENCHIMENTO OBRIGATÓRIO
+                          </p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                            <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Saída
+                          </label>
+                          <input
+                            type="date"
+                            value={formData.data_saida}
+                            onChange={e => setFormData({ ...formData, data_saida: e.target.value })}
+                            className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                            <Clock className="w-4 h-4 text-[#FFD700]" /> Hora Saída
+                          </label>
+                          <input
+                            type="time"
+                            value={formData.hora_saida}
+                            onChange={e => setFormData({ ...formData, hora_saida: e.target.value })}
+                            className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
+                          <MapPin className="w-4 h-4 text-[#FFD700]" /> KM Saída
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="000000"
+                          value={formData.km_saida}
+                          onChange={e => {
+                            setFormData({ ...formData, km_saida: e.target.value });
+                            setKmError(false);
+                          }}
+                          className={cn(
+                            "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
+                            kmError ? "border-red-500" : "border-zinc-800"
+                          )}
+                        />
+                        {kmError && (
+                          <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
+                            KM INCORRETO: MENOR QUE O ÚLTIMO REGISTRO ({localLastKm[formData.veiculo]?.toLocaleString('pt-BR')})
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-zinc-800">
                       <button
-                        key={item}
-                        type="button"
-                        onClick={() => handleChecklist(item)}
-                        className={cn(
-                          "w-full p-3 rounded-xl border flex items-center gap-3 transition-all text-left",
-                          formData.checklist.includes(item)
-                            ? "bg-zinc-800 border-[#FFD700] text-white"
-                            : "bg-black border-zinc-800 text-zinc-500"
-                        )}
+                        onClick={handleSaidaSubmit}
+                        disabled={loading || (status && !status.sheetConnected)}
+                        className="w-full h-14 bg-[#FFD700] text-black font-bold text-lg rounded-xl flex items-center justify-center gap-3 hover:bg-[#e6c200] transition-all active:scale-95 disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-500"
                       >
-                        {formData.checklist.includes(item) ? (
-                          <CheckSquare className="w-4 h-4 text-[#FFD700]" />
-                        ) : (
-                          <Square className="w-4 h-4" />
+                        {loading ? "Processando..." : (
+                          <>Registrar Saída <Send className="w-5 h-5" /></>
                         )}
-                        <span className="text-xs font-medium">{item}</span>
                       </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4 border-t border-zinc-800">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                      <MapPin className="w-4 h-4 text-[#FFD700]" /> Código da Obra / Local de Destino
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Obra 123 ou Cidade X"
-                      value={formData.local_destino}
-                      onChange={e => {
-                        setFormData({ ...formData, local_destino: e.target.value });
-                        setShowDestinoError(false);
-                      }}
-                      className={cn(
-                        "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
-                        showDestinoError ? "border-red-500" : "border-zinc-800"
-                      )}
-                    />
-                    {showDestinoError && (
-                      <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
-                        PREENCHIMENTO OBRIGATÓRIO
-                      </p>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                        <Calendar className="w-4 h-4 text-[#FFD700]" /> Data Saída
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.data_saida}
-                        onChange={e => setFormData({ ...formData, data_saida: e.target.value })}
-                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
-                      />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                        <Clock className="w-4 h-4 text-[#FFD700]" /> Hora Saída
-                      </label>
-                      <input
-                        type="time"
-                        value={formData.hora_saida}
-                        onChange={e => setFormData({ ...formData, hora_saida: e.target.value })}
-                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
-                      />
+                  </>
+                ) : (
+                  formData.veiculo && (
+                    <div className="pt-2">
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 rounded-xl text-center">
+                        <p className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest leading-relaxed">
+                          Veículo em viagem. <br/> Preencha os dados de chegada abaixo.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
-                      <MapPin className="w-4 h-4 text-[#FFD700]" /> KM Saída
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="000000"
-                      value={formData.km_saida}
-                      onChange={e => {
-                        setFormData({ ...formData, km_saida: e.target.value });
-                        setKmError(false);
-                      }}
-                      className={cn(
-                        "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
-                        kmError ? "border-red-500" : "border-zinc-800"
-                      )}
-                    />
-                    {kmError && (
-                      <p className="text-red-500 font-bold text-[9px] uppercase tracking-tighter">
-                        KM INCORRETO: MENOR QUE O ÚLTIMO REGISTRO ({localLastKm[formData.veiculo]?.toLocaleString('pt-BR')})
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-zinc-800">
-                  <button
-                    onClick={handleSaidaSubmit}
-                    disabled={loading || (status && !status.sheetConnected) || vehicleStatus[formData.veiculo] === 'em_viagem'}
-                    className="w-full h-14 bg-[#FFD700] text-black font-bold text-lg rounded-xl flex items-center justify-center gap-3 hover:bg-[#e6c200] transition-all active:scale-95 disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-500"
-                  >
-                    {loading ? "Processando..." : (
-                      <>Registrar Saída <Send className="w-5 h-5" /></>
-                    )}
-                  </button>
-                  {vehicleStatus[formData.veiculo] === 'em_viagem' && (
-                    <p className="text-red-500 font-bold text-[10px] uppercase text-center mt-3 tracking-widest">Veículo já está em viagem. Registre a chegada.</p>
-                  )}
-                </div>
+                  )
+                )}
               </div>
 
               {/* Retorno & Avarias */}
