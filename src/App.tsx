@@ -271,9 +271,33 @@ export default function App() {
     return LAST_KM_RECORDS;
   });
 
+  const [vehicleStatus, setVehicleStatus] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('cetec_vehicle_status');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return {};
+  });
+
+  const [vehicleDrivers, setVehicleDrivers] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('cetec_vehicle_drivers');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return {};
+  });
+
   useEffect(() => {
     localStorage.setItem('cetec_last_km', JSON.stringify(localLastKm));
   }, [localLastKm]);
+
+  useEffect(() => {
+    localStorage.setItem('cetec_vehicle_status', JSON.stringify(vehicleStatus));
+  }, [vehicleStatus]);
+
+  useEffect(() => {
+    localStorage.setItem('cetec_vehicle_drivers', JSON.stringify(vehicleDrivers));
+  }, [vehicleDrivers]);
 
   // Sincroniza KMs globais da frota pela API ao abrir o App
   useEffect(() => {
@@ -457,13 +481,12 @@ export default function App() {
     }));
   };
 
-  const handleFinalSubmit = async () => {
-    // Validation Logic that used to be in nextStep
+  const handleSaidaSubmit = async () => {
     if (formData.motorista) {
       const cnhStatus = checkCNH(formData.motorista);
       if (!cnhStatus.valid) {
         alert("Sua CNH está vencida. Você não está autorizado a dirigir.");
-        return; // Optional: Stop submission here, or allow depending on requirements.
+        return;
       }
     } else {
       alert("Por favor, selecione um Motorista.");
@@ -501,7 +524,63 @@ export default function App() {
 
     if (!formData.local_destino.trim()) {
       setShowDestinoError(true);
-      alert("Por favor, preencha o preencha Código da Obra / Local de Destino.");
+      alert("Por favor, preencha o Código da Obra / Local de Destino.");
+      return;
+    }
+
+    setKmError(false);
+    setShowDestinoError(false);
+
+    setLoading(true);
+    try {
+      if (!status?.scriptUrl) {
+        throw new Error("URL do Google Script não configurada.");
+      }
+
+      const dataToSubmit = {
+        ...formData,
+        km_saida: cleanKmSaidaStr,
+        km_chegada: "",
+        data_saida: formatDateToBR(formData.data_saida),
+        data_retorno: "",
+        type: "saida"
+      };
+
+      const response = await fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSubmit),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro na API.");
+      }
+
+      setLocalLastKm(prev => ({
+        ...prev,
+        [formData.veiculo]: kmSaida
+      }));
+      setVehicleStatus(prev => ({
+        ...prev,
+        [formData.veiculo]: 'em_viagem'
+      }));
+      setVehicleDrivers(prev => ({
+        ...prev,
+        [formData.veiculo]: formData.motorista
+      }));
+
+      setSuccess(true);
+    } catch (error: any) {
+      alert("Erro ao conectar ao servidor: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChegadaSubmit = async () => {
+    if (!formData.veiculo) {
+      alert("Por favor, selecione o Veículo.");
       return;
     }
 
@@ -521,16 +600,15 @@ export default function App() {
       return;
     }
 
-    if (!isInitialSetChegada && kmChegada < kmSaida) {
+    // Comparamos com o último KM do veículo (que agora é o KM de Saída gravado no estado anterior)
+    const lastKm = localLastKm[formData.veiculo] || 0;
+    if (!isInitialSetChegada && kmChegada < lastKm) {
       setKmChegadaError(true);
-      alert(`O KM de Chegada não pode ser menor que o KM de Saída (${kmSaida.toLocaleString('pt-BR')}).`);
+      alert(`O KM de Chegada não pode ser menor que o KM de Saída (${lastKm.toLocaleString('pt-BR')}).`);
       return;
     }
 
-    setKmError(false);
-    setShowDestinoError(false);
     setKmChegadaError(false);
-
     setLoading(true);
     try {
       if (!status?.scriptUrl) {
@@ -539,11 +617,13 @@ export default function App() {
 
       const dataToSubmit = {
         ...formData,
-        km_saida: cleanKmSaidaStr,
+        motorista: formData.motorista || vehicleDrivers[formData.veiculo] || "",
+        km_saida: "",
         km_chegada: cleanKmChegadaStr,
-        data_saida: formatDateToBR(formData.data_saida),
+        data_saida: "",
         data_retorno: formatDateToBR(formData.data_retorno),
-        type: "viagem"
+        data_chegada: formatDateToBR(formData.data_retorno),
+        type: "chegada"
       };
 
       const response = await fetch("/api/submit", {
@@ -561,7 +641,16 @@ export default function App() {
         ...prev,
         [formData.veiculo]: kmChegada
       }));
+      setVehicleStatus(prev => ({
+        ...prev,
+        [formData.veiculo]: 'disponivel'
+      }));
 
+      // Limpa formulário após chegada
+      setFormData(prev => ({
+        ...prev,
+        motorista: "", veiculo: "", checklist: [], motivo: "", local_destino: "", km_saida: "", km_chegada: "", avaria: "Não", fotos: []
+      }));
       setSuccess(true);
     } catch (error: any) {
       alert("Erro ao conectar ao servidor: " + error.message);
@@ -738,10 +827,68 @@ export default function App() {
                     )}
                   />
                 </div>
+                
+                {/* Troca de Óleo - Abastecimento */}
+                <div className="space-y-3 pt-2">
+                  <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Status do Óleo</label>
+                  {fuelingData.veiculo ? (
+                    <div className="bg-black border border-zinc-800 rounded-xl p-4">
+                      <p className="text-[9px] font-bold text-[#FFD700] uppercase tracking-widest mb-3">Próxima Troca:</p>
+                      <div className="space-y-3">
+                        {oilReferences.filter(ref => ref.vehicle === fuelingData.veiculo).map(ref => {
+                          const nextKmStr = (ref.km || "").toString().replace(/\./g, '');
+                          const nextKm = parseFloat(nextKmStr);
+                          const currentKm = parseFloat(fuelingData.km || "0");
+                          const hasAlert = !isNaN(nextKm) && fuelingData.km !== "";
+                          const isUrgent = hasAlert && currentKm > nextKm;
+                          return (
+                            <div key={ref.vehicle} className="space-y-2">
+                              <div className="flex justify-between text-[10px]">
+                                <span className="text-zinc-400 font-medium">{ref.vehicle}</span>
+                                <span className="text-white font-bold">KM {ref.km}</span>
+                              </div>
+                              {hasAlert && (
+                                <div className={cn(
+                                  "text-[9px] font-black uppercase tracking-widest p-2 rounded-lg text-center",
+                                  isUrgent ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                )}>
+                                  {isUrgent ? "TROCA DE ÓLEO URGENTE" : "OK - AGUARDAR"}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-black/30 border border-dashed border-zinc-800 rounded-xl p-4 text-center">
+                      <p className="text-[10px] text-zinc-600 uppercase tracking-tighter">Selecione o veículo</p>
+                    </div>
+                  )}
+                  {(() => {
+                    const ref = oilReferences.find(r => r.vehicle === fuelingData.veiculo);
+                    if (!ref || !fuelingData.km) return null;
+                    const nextKm = parseFloat(ref.km.replace(/\./g, ''));
+                    const currentKm = parseFloat(fuelingData.km.replace(/\./g, ''));
+                    const isUrgent = !isNaN(nextKm) && currentKm > nextKm;
+
+                    if (isUrgent) {
+                      return (
+                        <div className="bg-[#FFD700]/10 border border-[#FFD700]/20 p-3 rounded-xl mb-2">
+                          <p className="text-[#FFD700] font-black text-[10px] text-center leading-tight uppercase tracking-wide">
+                            USAR CARTÃO VALE CARD PARA TROCA ÓLEO E FILTRO
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
                 <button
                   onClick={handleFuelingSubmit}
                   disabled={fuelingLoading || !fuelingData.motorista || !fuelingData.veiculo || !fuelingData.km || !fuelingData.litros}
-                  className="w-full py-3 bg-[#FFD700] text-black font-bold rounded-xl hover:bg-[#e6c200] transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3 bg-[#FFD700] text-black font-bold rounded-xl hover:bg-[#e6c200] transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
                 >
                   {fuelingLoading ? "Enviando..." : <><Send className="w-4 h-4" /> Enviar Abastecimento</>}
                 </button>
@@ -835,7 +982,16 @@ export default function App() {
                   <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Modelo e Placa</label>
                   <select
                     value={formData.veiculo}
-                    onChange={e => setFormData({ ...formData, veiculo: e.target.value })}
+                    onChange={e => {
+                      const selectedVehicle = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        veiculo: selectedVehicle,
+                        motorista: (vehicleStatus[selectedVehicle] === 'em_viagem' && vehicleDrivers[selectedVehicle]) 
+                                   ? vehicleDrivers[selectedVehicle] 
+                                   : formData.motorista
+                      });
+                    }}
                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
                   >
                     <option value="">Selecione o veículo</option>
@@ -942,61 +1098,19 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Troca de Óleo */}
-                <div className="space-y-3 pt-4 border-t border-zinc-800">
-                  <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Troca de Óleo</label>
-                  {formData.veiculo ? (
-                    <div className="bg-black border border-zinc-800 rounded-xl p-4">
-                      <p className="text-[9px] font-bold text-[#FFD700] uppercase tracking-widest mb-3">Próxima Troca:</p>
-                      <div className="space-y-3">
-                        {oilReferences.filter(ref => ref.vehicle === formData.veiculo).map(ref => {
-                          const nextKmStr = (ref.km || "").toString().replace(/\./g, '');
-                          const nextKm = parseFloat(nextKmStr);
-                          const currentKm = parseFloat(formData.km_saida || "0");
-                          const hasAlert = !isNaN(nextKm) && formData.km_saida !== "";
-                          const isUrgent = hasAlert && currentKm > nextKm;
-                          return (
-                            <div key={ref.vehicle} className="space-y-2">
-                              <div className="flex justify-between text-[10px]">
-                                <span className="text-zinc-400 font-medium">{ref.vehicle}</span>
-                                <span className="text-white font-bold">KM {ref.km}</span>
-                              </div>
-                              {hasAlert && (
-                                <div className={cn(
-                                  "text-[9px] font-black uppercase tracking-widest p-2 rounded-lg text-center",
-                                  isUrgent ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                                )}>
-                                  {isUrgent ? "TROCA DE ÓLEO URGENTE" : "OK - AGUARDAR"}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-black/30 border border-dashed border-zinc-800 rounded-xl p-4 text-center">
-                      <p className="text-[10px] text-zinc-600 uppercase tracking-tighter">Selecione o veículo</p>
-                    </div>
+                <div className="pt-4 border-t border-zinc-800">
+                  <button
+                    onClick={handleSaidaSubmit}
+                    disabled={loading || (status && !status.sheetConnected) || vehicleStatus[formData.veiculo] === 'em_viagem'}
+                    className="w-full h-14 bg-[#FFD700] text-black font-bold text-lg rounded-xl flex items-center justify-center gap-3 hover:bg-[#e6c200] transition-all active:scale-95 disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-500"
+                  >
+                    {loading ? "Processando..." : (
+                      <>Registrar Saída <Send className="w-5 h-5" /></>
+                    )}
+                  </button>
+                  {vehicleStatus[formData.veiculo] === 'em_viagem' && (
+                    <p className="text-red-500 font-bold text-[10px] uppercase text-center mt-3 tracking-widest">Veículo já está em viagem. Registre a chegada.</p>
                   )}
-                  {(() => {
-                    const ref = oilReferences.find(r => r.vehicle === formData.veiculo);
-                    if (!ref || !formData.km_saida) return null;
-                    const nextKm = parseFloat(ref.km.replace(/\./g, ''));
-                    const currentKm = parseFloat(formData.km_saida);
-                    const isUrgent = !isNaN(nextKm) && currentKm > nextKm;
-
-                    if (isUrgent) {
-                      return (
-                        <div className="bg-[#FFD700]/10 border border-[#FFD700]/20 p-3 rounded-xl">
-                          <p className="text-[#FFD700] font-black text-[10px] text-center leading-tight uppercase tracking-wide">
-                            USAR CARTÃO VALE CARD PARA TROCA ÓLEO E FILTRO
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
                 </div>
               </div>
 
@@ -1110,38 +1224,26 @@ export default function App() {
                     )}
                   </div>
                 </div>
+                
+                <div className="pt-4 border-t border-zinc-800">
+                  <button
+                    onClick={handleChegadaSubmit}
+                    disabled={loading || (status && !status.sheetConnected) || vehicleStatus[formData.veiculo] !== 'em_viagem'}
+                    className="w-full h-14 bg-[#FFD700] text-black font-bold text-lg rounded-xl flex items-center justify-center gap-3 hover:bg-[#e6c200] transition-all active:scale-95 disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-500"
+                  >
+                    {loading ? "Processando..." : (
+                      <>Registrar Chegada <Send className="w-5 h-5" /></>
+                    )}
+                  </button>
+                  {formData.veiculo && vehicleStatus[formData.veiculo] !== 'em_viagem' && (
+                    <p className="text-zinc-500 font-bold text-[10px] uppercase text-center mt-3 tracking-widest">No pátio. Registre uma saída primeiro.</p>
+                  )}
+                </div>
+
               </div>
             </div>
           </div>
         </main>
-
-        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900/80 backdrop-blur-lg border-t border-zinc-800 p-6 z-50">
-          <div className="max-w-xl mx-auto flex flex-col gap-4">
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={handleFinalSubmit}
-                disabled={loading || (status && !status.sheetConnected)}
-                className="flex-1 h-14 bg-[#FFD700] text-black font-bold text-lg rounded-xl flex items-center justify-center gap-3 hover:bg-[#e6c200] transition-transform active:scale-95 disabled:opacity-50"
-              >
-                {loading ? "Processando e Enviando..." : (
-                  <>Finalizar e Registrar Viagem <Send className="w-6 h-6" /></>
-                )}
-              </button>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              {status?.sheetConnected ? (
-                <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-bold uppercase tracking-wider">
-                  <Link2 className="w-3 h-3" /> Ligação Direta Ativa
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-                  <Unlink className="w-3 h-3" /> Conexão Pendente
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
