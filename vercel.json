@@ -1,4 +1,7 @@
 {
+    "env": {
+        "GOOGLE_SCRIPT_URL": "https://script.google.com/macros/s/AKfycbywDevaOpWnuu7xAy4qKMRZrQ3RG8cjZWO-EEcNt1k0WjabFKuigwgNGjJX_XvywQlL/exec"
+    },
     "rewrites": [
         {
             "source": "/api/(.*)",
