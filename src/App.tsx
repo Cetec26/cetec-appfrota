@@ -107,6 +107,14 @@ export default function App() {
     return INITIAL_DRIVERS;
   });
 
+  const [vehiclesList, setVehiclesList] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('cetec_vehicles_list');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return VEHICLES;
+  });
+
   const [driverExpirations, setDriverExpirations] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('cetec_driver_expirations');
@@ -274,17 +282,29 @@ export default function App() {
   const [vehicleStatus, setVehicleStatus] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('cetec_vehicle_status');
-      if (saved) return JSON.parse(saved);
+      let parsed = saved ? JSON.parse(saved) : {};
+      // PATCH: Forçar AZL5B65 para 'em_viagem' caso o patch ainda não tenha sido aplicado
+      if (!localStorage.getItem('patch_azl5b65_status_applied')) {
+        parsed['Strada CD AZL5B65'] = 'em_viagem';
+        localStorage.setItem('patch_azl5b65_status_applied', 'true');
+      }
+      return parsed;
     } catch { }
-    return {};
+    return { 'Strada CD AZL5B65': 'em_viagem' };
   });
 
   const [vehicleDrivers, setVehicleDrivers] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('cetec_vehicle_drivers');
-      if (saved) return JSON.parse(saved);
+      let parsed = saved ? JSON.parse(saved) : {};
+      // PATCH: Definir Gustavo como motorista deste veículo caso o patch ainda não tenha sido aplicado
+      if (!localStorage.getItem('patch_azl5b65_driver_applied')) {
+        parsed['Strada CD AZL5B65'] = 'Gustavo Oliveira de Medeiros';
+        localStorage.setItem('patch_azl5b65_driver_applied', 'true');
+      }
+      return parsed;
     } catch { }
-    return {};
+    return { 'Strada CD AZL5B65': 'Gustavo Oliveira de Medeiros' };
   });
 
   useEffect(() => {
@@ -338,6 +358,16 @@ export default function App() {
         if (data && data.success && data.data) {
           setOilReferences(data.data);
           localStorage.setItem('cetec_oil_refs', JSON.stringify(data.data));
+        }
+      })
+      .catch(console.error);
+
+    fetch("/api/vehicles")
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+          setVehiclesList(data.data);
+          localStorage.setItem('cetec_vehicles_list', JSON.stringify(data.data));
         }
       })
       .catch(console.error);
@@ -783,7 +813,7 @@ export default function App() {
                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
                   >
                     <option value="">Selecione o Veículo</option>
-                    {VEHICLES.map(v => <option key={v} value={v}>{v}</option>)}
+                    {vehiclesList.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -995,7 +1025,7 @@ export default function App() {
                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
                   >
                     <option value="">Selecione o veículo</option>
-                    {VEHICLES.map(v => <option key={v} value={v}>{v}</option>)}
+                    {vehiclesList.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
 
