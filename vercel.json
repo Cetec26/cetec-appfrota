@@ -1,6 +1,6 @@
 {
     "env": {
-        "GOOGLE_SCRIPT_URL": "https://script.google.com/macros/s/AKfycbywDevaOpWnuu7xAy4qKMRZrQ3RG8cjZWO-EEcNt1k0WjabFKuigwgNGjJX_XvywQlL/exec"
+        "GOOGLE_SCRIPT_URL": "https://script.google.com/macros/s/AKfycbxfzy6rg4O0k6HFmbKQz7XytZlKKjeruhPucR9uqvOuiqrB7Aw2gOWpro_bo16Kjlci/exec"
     },
     "rewrites": [
         {
