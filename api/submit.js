@@ -11,54 +11,40 @@ export default async function handler(req, res) {
 
         const d = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
+        // =====================================================
+        // SAÍDA — campos limpos e nomeados
+        // =====================================================
         let payload;
-
-        // ==============================================
-        // SAÍDA: monta array na ORDEM EXATA das colunas
-        // A  B         C           D         E          F             G               H
-        // A=Data Saída, B=Horário, C=Motorista, D=Veículo, E=KM Saída, F=Local Saída, G=Cód+Cidade, H=Verificação,
-        // I=Data Chegada, J=KM Chegada, K=KMS Rodados, L=Avarias, M=Foto Avarias
-        // ==============================================
         if (d.type === "saida") {
             payload = {
                 type: "saida",
-                row: [
-                    d.data_saida   || "",  // A - DATA SAÍDA
-                    d.hora_saida   || "",  // B - HORÁRIO
-                    d.motorista    || "",  // C - MOTORISTA
-                    d.veiculo      || "",  // D - VEÍCULO
-                    d.km_saida     || "",  // E - KM SAÍDA
-                    d.local_saida  || "",  // F - LOCAL SAÍDA
-                    d.local_destino|| "",  // G - CÓD + CIDADE
-                    d.checklist    || "",  // H - VERIFICAÇÃO
-                    "",                    // I - DATA CHEGADA (vazio)
-                    "",                    // J - KM CHEGADA (vazio)
-                    "",                    // K - KMS RODADOS (vazio)
-                    "",                    // L - AVARIAS (vazio)
-                    ""                     // M - FOTO AVARIAS (vazio)
-                ]
+                col_A: d.data_saida    || "",  // DATA SAÍDA
+                col_B: d.hora_saida    || "",  // HORÁRIO
+                col_C: d.motorista     || "",  // MOTORISTA
+                col_D: d.veiculo       || "",  // VEÍCULO
+                col_E: d.km_saida      || "",  // KM SAÍDA
+                col_F: d.local_saida   || "",  // LOCAL SAÍDA
+                col_G: d.local_destino || "",  // CÓD + CIDADE
+                col_H: d.checklist     || ""   // VERIFICAÇÃO
             };
 
-        // ==============================================
-        // CHEGADA: monta array apenas com os campos de chegada (I a M)
-        // O script vai localizar a linha pela placa e atualizar
-        // ==============================================
+        // =====================================================
+        // CHEGADA — campos limpos e nomeados
+        // =====================================================
         } else if (d.type === "chegada") {
             payload = {
                 type: "chegada",
-                veiculo: d.veiculo || "",
-                chegada: [
-                    d.data_chegada  || "",  // I - DATA CHEGADA
-                    d.km_chegada    || "",  // J - KM CHEGADA
-                    d.kms_rodados   || "",  // K - KMS RODADOS
-                    d.avarias       || "",  // L - AVARIAS
-                    d.fotos         || ""   // M - FOTO AVARIAS
-                ]
+                col_D: d.veiculo       || "",  // VEÍCULO (para localizar a linha)
+                col_I: d.data_chegada  || "",  // DATA CHEGADA
+                col_J: d.km_chegada    || "",  // KM CHEGADA
+                col_K: d.kms_rodados   || "",  // KMS RODADOS
+                col_L: d.avarias       || "",  // AVARIAS
+                col_M: d.fotos         || ""   // FOTO AVARIAS
             };
 
-        // ==============================================
-        // ABASTECIMENTO: passa direto
-        // ==============================================
+        // =====================================================
+        // ABASTECIMENTO — passa direto
+        // =====================================================
         } else {
             payload = d;
         }
