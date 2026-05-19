@@ -568,11 +568,19 @@ export default function App() {
       }
 
       const dataToSubmit = {
-        ...formData,
-        km_saida: cleanKmSaidaStr,
-        km_chegada: "",
         data_saida: formatDateToBR(formData.data_saida),
-        data_retorno: "",
+        hora_saida: formData.hora_saida,
+        motorista: formData.motorista,
+        veiculo: formData.veiculo,
+        km_saida: cleanKmSaidaStr,
+        local_saida: formData.local_saida,
+        local_destino: formData.local_destino,
+        checklist: formData.checklist.join(", "),
+        data_chegada: "",
+        km_chegada: "",
+        kms_rodados: "",
+        avarias: "",
+        fotos: "",
         type: "saida"
       };
 
@@ -645,14 +653,22 @@ export default function App() {
         throw new Error("URL do Google Script não configurada.");
       }
 
+      const kmsRodadosCalculated = isInitialSetChegada ? 0 : (kmChegada - lastKm);
+
       const dataToSubmit = {
-        ...formData,
-        motorista: formData.motorista || vehicleDrivers[formData.veiculo] || "",
-        km_saida: "",
-        km_chegada: cleanKmChegadaStr,
         data_saida: "",
-        data_retorno: formatDateToBR(formData.data_retorno),
+        hora_saida: "",
+        motorista: formData.motorista || vehicleDrivers[formData.veiculo] || "",
+        veiculo: formData.veiculo,
+        km_saida: "",
+        local_saida: "",
+        local_destino: "",
+        checklist: "",
         data_chegada: formatDateToBR(formData.data_retorno),
+        km_chegada: cleanKmChegadaStr,
+        kms_rodados: kmsRodadosCalculated.toString(),
+        avarias: formData.avaria,
+        fotos: formData.fotos && formData.fotos.length > 0 ? `Sim (${formData.fotos.length})` : "Não",
         type: "chegada"
       };
 
@@ -1216,12 +1232,14 @@ export default function App() {
                     <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
                       <AlertTriangle className="w-4 h-4 text-[#FFD700]" /> Avarias Identificadas?
                     </label>
-                    <textarea
-                      placeholder="Descreva qualquer problema ou 'Não' se estiver tudo ok."
+                    <select
                       value={formData.avaria}
                       onChange={e => setFormData({ ...formData, avaria: e.target.value })}
-                      className="w-full bg-black border border-zinc-800 rounded-xl px-4 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all min-h-[80px]"
-                    />
+                      className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
+                    >
+                      <option value="Não">Não</option>
+                      <option value="Sim">Sim</option>
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[11px] font-medium text-zinc-400 flex items-center gap-2 uppercase tracking-tight">
