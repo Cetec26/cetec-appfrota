@@ -575,7 +575,7 @@ export default function App() {
         km_saida: cleanKmSaidaStr,
         local_saida: formData.local_saida,
         local_destino: formData.local_destino,
-        checklist: formData.checklist.join(", "),
+        checklist: Array.isArray(formData.checklist) ? formData.checklist.join(", ") : "",
         data_chegada: "",
         km_chegada: "",
         kms_rodados: "",
