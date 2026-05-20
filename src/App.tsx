@@ -669,7 +669,7 @@ export default function App() {
         data_chegada: formatDateToBR(formData.data_retorno),
         hora_chegada: formData.hora_retorno,
         km_chegada: cleanKmChegadaStr,
-        kms_rodados: kmsRodadosCalculated.toString(),
+        kms_rodados: isInitialSetChegada ? "0" : `=INDIRECT("K"&ROW())-INDIRECT("E"&ROW())`,
         avarias: formData.avaria,
         fotos: formData.fotos && formData.fotos.length > 0 ? `Sim (${formData.fotos.length})` : "Não",
         type: "chegada"
