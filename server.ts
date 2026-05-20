@@ -36,7 +36,8 @@ app.get("/api/status", async (req, res) => {
   const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
   res.json({ 
     configOk: !!scriptUrl,
-    sheetConnected: !!scriptUrl && scriptUrl.startsWith("https://script.google.com")
+    sheetConnected: !!scriptUrl && scriptUrl.startsWith("https://script.google.com"),
+    scriptUrl: scriptUrl || ""
   });
 });
 

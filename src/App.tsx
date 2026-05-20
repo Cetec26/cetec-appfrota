@@ -395,6 +395,7 @@ export default function App() {
     // Só valida se NÃO for o comando de "memorizar primeiro abastecimento" ('zerar')
     if (!isInitialSet && currentKm < lastKm) {
       setFuelingKmError(true);
+      alert(`O KM de Abastecimento não pode ser menor que o último registro (${lastKm.toLocaleString('pt-BR')}).`);
       return;
     }
 
@@ -405,6 +406,7 @@ export default function App() {
       const average = kmTraveled / liters;
       if (average > 15) {
         setFuelingAvgError(true);
+        alert(`Média de consumo inválida (${average.toFixed(2)} km/l). Ultrapassou o limite máximo de 15 km/l. Verifique se o KM e Litros estão corretos.`);
         return;
       }
     }
@@ -665,6 +667,7 @@ export default function App() {
         local_destino: "",
         checklist: "",
         data_chegada: formatDateToBR(formData.data_retorno),
+        hora_chegada: formData.hora_retorno,
         km_chegada: cleanKmChegadaStr,
         kms_rodados: kmsRodadosCalculated.toString(),
         avarias: formData.avaria,
