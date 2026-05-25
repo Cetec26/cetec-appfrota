@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { GoogleLogin, googleLogout } from '@react-oauth/google';
+import { GoogleLogin, googleLogout, useGoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
 
 function cn(...inputs: ClassValue[]) {
@@ -137,6 +137,39 @@ export default function App() {
   const [user, setUser] = useState<{ name: string, email: string, picture?: string } | null>(() => {
     const saved = localStorage.getItem('cetec_user');
     return saved ? JSON.parse(saved) : null;
+  });
+
+  // Custom Google Login Hook for iOS Safari Popup Compatibility
+  const loginWithHook = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      setLoading(true);
+      fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${tokenResponse.access_token}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch user info");
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.email) {
+            const userData = {
+              name: data.name || data.given_name || "Usuário",
+              email: data.email,
+              picture: data.picture
+            };
+            setUser(userData);
+            localStorage.setItem('cetec_user', JSON.stringify(userData));
+          }
+        })
+        .catch(err => {
+          console.error("Login hook error:", err);
+          alert("Erro ao obter dados de login do Google.");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    },
+    onError: (error) => {
+      console.error("Login hook error response:", error);
+    }
   });
 
   const handleLoginSuccess = (credentialResponse: any) => {
@@ -831,7 +864,7 @@ export default function App() {
 
               <button
                 type="button"
-                onClick={handleGoogleRedirectLogin}
+                onClick={() => loginWithHook()}
                 className="w-full py-3.5 px-4 bg-zinc-950 hover:bg-zinc-900 active:scale-[0.98] border border-zinc-800 rounded-xl text-sm font-semibold flex items-center justify-center gap-3 text-zinc-200 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -844,7 +877,7 @@ export default function App() {
               </button>
               
               <p className="text-[10px] text-zinc-500 max-w-[250px] mx-auto mt-2">
-                Use o botão alternativo acima caso o botão padrão do Google seja bloqueado pelo sistema do seu iPhone.
+                Se o Safari pedir permissão para abrir uma janela pop-up, clique em <strong>"Permitir"</strong> para concluir o login.
               </p>
             </div>
           </div>
