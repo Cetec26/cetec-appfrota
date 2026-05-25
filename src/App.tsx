@@ -254,11 +254,17 @@ export default function App() {
         parsed['Strada Simples QPS9I59'] = 'em_viagem';
         localStorage.setItem('patch_qps9i59_status_applied', 'true');
       }
+      // PATCH: Forçar Strada Endurance SDP4I02 para 'em_viagem'
+      if (!localStorage.getItem('patch_sdp4i02_status_applied_v1')) {
+        parsed['Strada Endurance SDP4I02'] = 'em_viagem';
+        localStorage.setItem('patch_sdp4i02_status_applied_v1', 'true');
+      }
       return parsed;
     } catch { }
     return { 
       'Strada CD AZL5B65': 'em_viagem',
-      'Strada Simples QPS9I59': 'em_viagem'
+      'Strada Simples QPS9I59': 'em_viagem',
+      'Strada Endurance SDP4I02': 'em_viagem'
     };
   });
 
@@ -276,11 +282,17 @@ export default function App() {
         parsed['Strada Simples QPS9I59'] = 'Raul Bonfim dos Santos';
         localStorage.setItem('patch_qps9i59_driver_applied', 'true');
       }
+      // PATCH: Definir Alexsandro para a Strada Endurance
+      if (!localStorage.getItem('patch_sdp4i02_driver_applied_v1')) {
+        parsed['Strada Endurance SDP4I02'] = 'Alexsandro Felipe Demétrio';
+        localStorage.setItem('patch_sdp4i02_driver_applied_v1', 'true');
+      }
       return parsed;
     } catch { }
     return { 
       'Strada CD AZL5B65': 'Gustavo Oliveira de Medeiros',
-      'Strada Simples QPS9I59': 'Raul Bonfim dos Santos'
+      'Strada Simples QPS9I59': 'Raul Bonfim dos Santos',
+      'Strada Endurance SDP4I02': 'Alexsandro Felipe Demétrio'
     };
   });
 
