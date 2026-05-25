@@ -288,9 +288,17 @@ export default function App() {
         parsed['Strada CD AZL5B65'] = 'em_viagem';
         localStorage.setItem('patch_azl5b65_status_applied', 'true');
       }
+      // PATCH: Forçar Strada Simples QPS9I59 para 'em_viagem' caso o patch ainda não tenha sido aplicado
+      if (!localStorage.getItem('patch_qps9i59_status_applied')) {
+        parsed['Strada Simples QPS9I59'] = 'em_viagem';
+        localStorage.setItem('patch_qps9i59_status_applied', 'true');
+      }
       return parsed;
     } catch { }
-    return { 'Strada CD AZL5B65': 'em_viagem' };
+    return { 
+      'Strada CD AZL5B65': 'em_viagem',
+      'Strada Simples QPS9I59': 'em_viagem'
+    };
   });
 
   const [vehicleDrivers, setVehicleDrivers] = useState<Record<string, string>>(() => {
@@ -302,9 +310,17 @@ export default function App() {
         parsed['Strada CD AZL5B65'] = 'Gustavo Oliveira de Medeiros';
         localStorage.setItem('patch_azl5b65_driver_applied', 'true');
       }
+      // PATCH: Definir Raul como motorista deste veículo caso o patch ainda não tenha sido aplicado
+      if (!localStorage.getItem('patch_qps9i59_driver_applied')) {
+        parsed['Strada Simples QPS9I59'] = 'Raul Bonfim dos Santos';
+        localStorage.setItem('patch_qps9i59_driver_applied', 'true');
+      }
       return parsed;
     } catch { }
-    return { 'Strada CD AZL5B65': 'Gustavo Oliveira de Medeiros' };
+    return { 
+      'Strada CD AZL5B65': 'Gustavo Oliveira de Medeiros',
+      'Strada Simples QPS9I59': 'Raul Bonfim dos Santos'
+    };
   });
 
   useEffect(() => {

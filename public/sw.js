@@ -1,15 +1,25 @@
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open('cetec-v1').then((cache) => {
-      return cache.addAll(['/', '/index.html']);
-    })
-  );
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      return response || fetch(e.request);
-    })
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((keys) => {
+        return Promise.all(keys.map((key) => caches.delete(key)));
+      })
+      .then(() => {
+        return self.registration.unregister();
+      })
+      .then(() => {
+        return self.clients.matchAll();
+      })
+      .then((clients) => {
+        clients.forEach((client) => {
+          if (client.url && 'navigate' in client) {
+            client.navigate(client.url);
+          }
+        });
+      })
   );
 });
