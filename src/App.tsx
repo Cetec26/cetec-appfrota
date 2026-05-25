@@ -864,7 +864,7 @@ export default function App() {
 
               <button
                 type="button"
-                onClick={() => loginWithHook()}
+                onClick={() => handleGoogleRedirectLogin()}
                 className="w-full py-3.5 px-4 bg-zinc-950 hover:bg-zinc-900 active:scale-[0.98] border border-zinc-800 rounded-xl text-sm font-semibold flex items-center justify-center gap-3 text-zinc-200 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
