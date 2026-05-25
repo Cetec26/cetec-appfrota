@@ -282,6 +282,11 @@ export default function App() {
         parsed['Strada Endurance SDP4I02'] = 'em_viagem';
         localStorage.setItem('patch_sdp4i02_status_applied_v1', 'true');
       }
+      // PATCH: Forçar AZL5B65 para 'disponivel' para corrigir bug de retorno travado
+      if (!localStorage.getItem('patch_azl5b65_status_disponivel_v1')) {
+        parsed['Strada CD AZL5B65'] = 'disponivel';
+        localStorage.setItem('patch_azl5b65_status_disponivel_v1', 'true');
+      }
       return parsed;
     } catch { }
     return { 
@@ -600,8 +605,9 @@ export default function App() {
         km_saida: cleanKmSaidaStr,
         local_saida: formData.local_saida,
         local_destino: formData.local_destino,
-        checklist: Array.isArray(formData.checklist) ? formData.checklist.join(", ") : "",
+        checklist: Array.isArray(formData.checklist) ? formData.checklist : [],
         data_chegada: "",
+        hora_chegada: "",
         km_chegada: "",
         kms_rodados: "",
         avarias: "",
@@ -688,7 +694,7 @@ export default function App() {
         km_saida: "",
         local_saida: "",
         local_destino: "",
-        checklist: "",
+        checklist: [],
         data_chegada: formatDateToBR(formData.data_retorno),
         hora_chegada: formData.hora_retorno,
         km_chegada: cleanKmChegadaStr,
