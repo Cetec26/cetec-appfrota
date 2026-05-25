@@ -607,7 +607,7 @@ export default function App() {
 
   const handleGoogleRedirectLogin = () => {
     const clientId = GOOGLE_CLIENT_ID;
-    const redirectUri = window.location.origin + '/';
+    const redirectUri = window.location.origin;
     const scope = encodeURIComponent('openid profile email');
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&state=redirect_login`;
     window.location.href = authUrl;
