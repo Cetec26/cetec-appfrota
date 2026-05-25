@@ -59,6 +59,13 @@ const VEHICLES = [
   "Strada Endurance SDP4I02"
 ];
 
+const VEHICLE_TANK_CAPACITIES: Record<string, number> = {
+  "Uno AID8C51": 50,
+  "Strada Simples QPS9I59": 58,
+  "Strada CD AZL5B65": 58,
+  "Strada Endurance SDP4I02": 55
+};
+
 const CHECKLIST_ITEMS = [
   "Nível da Água do Radiador está okay?",
   "Nível do Oléo do Motor está okay?",
@@ -391,8 +398,16 @@ export default function App() {
       return;
     }
 
-    // Validação de média (máximo 15km/lt)
+    // Validação de Capacidade Máxima do Tanque
     const liters = parseFloat(fuelingData.litros);
+    const maxCapacity = VEHICLE_TANK_CAPACITIES[fuelingData.veiculo];
+    if (maxCapacity && liters > maxCapacity) {
+      setFuelingAvgError(true);
+      alert(`O litro máximo para o veículo ${fuelingData.veiculo} é ${maxCapacity} litros. Verifique o valor lançado.`);
+      return;
+    }
+
+    // Validação de média (máximo 15km/lt)
     if (!isInitialSet && lastKm > 0 && liters > 0 && fuelingData.tanque_cheio === "Sim") {
       const kmTraveled = currentKm - lastKm;
       const average = kmTraveled / liters;
