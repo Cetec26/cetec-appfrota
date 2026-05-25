@@ -116,7 +116,6 @@ export default function App() {
   const [showDestinoError, setShowDestinoError] = useState(false);
   const [kmError, setKmError] = useState(false);
   const [kmChegadaError, setKmChegadaError] = useState(false);
-  const [manualFormMode, setManualFormMode] = useState<'saida' | 'chegada' | null>(null);
 
   const [driversList, setDriversList] = useState<string[]>(INITIAL_DRIVERS);
 
@@ -325,7 +324,7 @@ export default function App() {
     };
   });
 
-  const activeFormMode = manualFormMode || (formData.veiculo && vehicleStatus[formData.veiculo] === 'em_viagem' ? 'chegada' : 'saida');
+  const activeFormMode = formData.veiculo && vehicleStatus[formData.veiculo] === 'em_viagem' ? 'chegada' : 'saida';
 
   // Removed Google Redirect Login Callback
 
@@ -348,6 +347,10 @@ export default function App() {
       .then(data => {
         if (data && data.success && data.data) {
           setLocalLastKm(prev => ({ ...prev, ...data.data }));
+        }
+        if (data && data.success && data.status) {
+          setVehicleStatus(data.status);
+          localStorage.setItem('cetec_vehicle_status', JSON.stringify(data.status));
         }
       })
       .catch(console.error);
@@ -1056,7 +1059,6 @@ export default function App() {
                     value={formData.veiculo}
                     onChange={e => {
                       const selectedVehicle = e.target.value;
-                      setManualFormMode(null);
                       setFormData({ 
                         ...formData, 
                         veiculo: selectedVehicle,
@@ -1071,25 +1073,6 @@ export default function App() {
                     {vehiclesList.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
-
-                {formData.veiculo && (
-                  <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 mb-6">
-                    <button
-                      type="button"
-                      onClick={() => setManualFormMode('saida')}
-                      className={`flex-1 text-[11px] py-2.5 rounded-lg font-bold uppercase transition-all ${activeFormMode === 'saida' ? 'bg-[#FFD700] text-black shadow-sm' : 'text-zinc-500 hover:text-white'}`}
-                    >
-                      Registrar Saída
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setManualFormMode('chegada')}
-                      className={`flex-1 text-[11px] py-2.5 rounded-lg font-bold uppercase transition-all ${activeFormMode === 'chegada' ? 'bg-[#FFD700] text-black shadow-sm' : 'text-zinc-500 hover:text-white'}`}
-                    >
-                      Registrar Retorno
-                    </button>
-                  </div>
-                )}
 
                 {activeFormMode === 'saida' ? (
                   <>
@@ -1341,7 +1324,7 @@ export default function App() {
                     )}
                   </button>
                   {formData.veiculo && activeFormMode === 'saida' && (
-                    <p className="text-zinc-500 font-bold text-[10px] uppercase text-center mt-3 tracking-widest">Selecione Retorno no topo para liberar.</p>
+                    <p className="text-zinc-500 font-bold text-[10px] uppercase text-center mt-3 tracking-widest">No pátio. Registre uma saída primeiro.</p>
                   )}
                 </div>
 
