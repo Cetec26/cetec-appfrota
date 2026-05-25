@@ -116,6 +116,7 @@ export default function App() {
   const [showDestinoError, setShowDestinoError] = useState(false);
   const [kmError, setKmError] = useState(false);
   const [kmChegadaError, setKmChegadaError] = useState(false);
+  const [manualFormMode, setManualFormMode] = useState<'saida' | 'chegada' | null>(null);
 
   const [driversList, setDriversList] = useState<string[]>(INITIAL_DRIVERS);
 
@@ -323,6 +324,8 @@ export default function App() {
       'Strada Endurance SDP4I02': 'Alexsandro Felipe Demétrio'
     };
   });
+
+  const activeFormMode = manualFormMode || (formData.veiculo && vehicleStatus[formData.veiculo] === 'em_viagem' ? 'chegada' : 'saida');
 
   // Removed Google Redirect Login Callback
 
@@ -1053,6 +1056,7 @@ export default function App() {
                     value={formData.veiculo}
                     onChange={e => {
                       const selectedVehicle = e.target.value;
+                      setManualFormMode(null);
                       setFormData({ 
                         ...formData, 
                         veiculo: selectedVehicle,
@@ -1068,7 +1072,26 @@ export default function App() {
                   </select>
                 </div>
 
-                {vehicleStatus[formData.veiculo] !== 'em_viagem' ? (
+                {formData.veiculo && (
+                  <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 mb-6">
+                    <button
+                      type="button"
+                      onClick={() => setManualFormMode('saida')}
+                      className={`flex-1 text-[11px] py-2.5 rounded-lg font-bold uppercase transition-all ${activeFormMode === 'saida' ? 'bg-[#FFD700] text-black shadow-sm' : 'text-zinc-500 hover:text-white'}`}
+                    >
+                      Registrar Saída
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setManualFormMode('chegada')}
+                      className={`flex-1 text-[11px] py-2.5 rounded-lg font-bold uppercase transition-all ${activeFormMode === 'chegada' ? 'bg-[#FFD700] text-black shadow-sm' : 'text-zinc-500 hover:text-white'}`}
+                    >
+                      Registrar Retorno
+                    </button>
+                  </div>
+                )}
+
+                {activeFormMode === 'saida' ? (
                   <>
                     <div className="space-y-3">
                       <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Checklist Pré-Viagem</label>
@@ -1310,15 +1333,15 @@ export default function App() {
                 <div className="pt-4 border-t border-zinc-800">
                   <button
                     onClick={handleChegadaSubmit}
-                    disabled={loading || (status && !status.sheetConnected) || vehicleStatus[formData.veiculo] !== 'em_viagem'}
+                    disabled={loading || (status && !status.sheetConnected) || activeFormMode !== 'chegada'}
                     className="w-full h-14 bg-[#FFD700] text-black font-bold text-lg rounded-xl flex items-center justify-center gap-3 hover:bg-[#e6c200] transition-all active:scale-95 disabled:opacity-30 disabled:bg-zinc-800 disabled:text-zinc-500"
                   >
                     {loading ? "Processando..." : (
                       <>Registrar Chegada <Send className="w-5 h-5" /></>
                     )}
                   </button>
-                  {formData.veiculo && vehicleStatus[formData.veiculo] !== 'em_viagem' && (
-                    <p className="text-zinc-500 font-bold text-[10px] uppercase text-center mt-3 tracking-widest">No pátio. Registre uma saída primeiro.</p>
+                  {formData.veiculo && activeFormMode === 'saida' && (
+                    <p className="text-zinc-500 font-bold text-[10px] uppercase text-center mt-3 tracking-widest">Selecione Retorno no topo para liberar.</p>
                   )}
                 </div>
 
