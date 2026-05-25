@@ -863,10 +863,10 @@ export default function App() {
                 
                 {/* Troca de Óleo - Abastecimento */}
                 <div className="space-y-3 pt-2">
-                  <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Status do Óleo</label>
+                  <label className="text-sm font-medium text-zinc-400 uppercase tracking-tight">Status do Óleo</label>
                   {fuelingData.veiculo ? (
                     <div className="bg-black border border-zinc-800 rounded-xl p-4">
-                      <p className="text-[9px] font-bold text-[#FFD700] uppercase tracking-widest mb-3">Próxima Troca:</p>
+                      <p className="text-xs font-bold text-[#FFD700] uppercase tracking-widest mb-3">Próxima Troca:</p>
                       <div className="space-y-3">
                         {oilReferences.filter(ref => ref.vehicle === fuelingData.veiculo).map(ref => {
                           const nextKmStr = (ref.km || "").toString().replace(/\./g, '');
@@ -876,13 +876,13 @@ export default function App() {
                           const isUrgent = hasAlert && currentKm > nextKm;
                           return (
                             <div key={ref.vehicle} className="space-y-2">
-                              <div className="flex justify-between text-[10px]">
+                              <div className="flex justify-between items-center text-sm">
                                 <span className="text-zinc-400 font-medium">{ref.vehicle}</span>
-                                <span className="text-white font-bold">KM {ref.km}</span>
+                                <span className="text-white font-black text-lg">KM {ref.km}</span>
                               </div>
                               {hasAlert && (
                                 <div className={cn(
-                                  "text-[9px] font-black uppercase tracking-widest p-2 rounded-lg text-center",
+                                  "text-xs font-black uppercase tracking-widest p-3 rounded-lg text-center",
                                   isUrgent ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                                 )}>
                                   {isUrgent ? "TROCA DE ÓLEO URGENTE" : "OK - AGUARDAR"}
@@ -895,7 +895,7 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="bg-black/30 border border-dashed border-zinc-800 rounded-xl p-4 text-center">
-                      <p className="text-[10px] text-zinc-600 uppercase tracking-tighter">Selecione o veículo</p>
+                      <p className="text-sm text-zinc-600 uppercase tracking-tighter">Selecione o veículo</p>
                     </div>
                   )}
                   {(() => {
@@ -907,8 +907,8 @@ export default function App() {
 
                     if (isUrgent) {
                       return (
-                        <div className="bg-[#FFD700]/10 border border-[#FFD700]/20 p-3 rounded-xl mb-2">
-                          <p className="text-[#FFD700] font-black text-[10px] text-center leading-tight uppercase tracking-wide">
+                        <div className="bg-[#FFD700]/10 border border-[#FFD700]/20 p-4 rounded-xl mb-2">
+                          <p className="text-[#FFD700] font-black text-sm text-center leading-tight uppercase tracking-wide">
                             USAR CARTÃO VALE CARD PARA TROCA ÓLEO E FILTRO
                           </p>
                         </div>
