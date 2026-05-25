@@ -16,13 +16,27 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// Service worker disabled to avoid caching issues during development
-/*
+// Active cleanup of old service workers and cache to prevent aggressive iOS/PWA caching issues
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => {
-      console.log('SW registration failed: ', err);
-    });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister().then(() => {
+        console.log('Service Worker unregistered successfully');
+      });
+    }
+  }).catch((err) => {
+    console.error('Error getting SW registrations:', err);
   });
 }
-*/
+
+if ('caches' in window) {
+  caches.keys().then((keys) => {
+    keys.forEach((key) => {
+      caches.delete(key).then(() => {
+        console.log('Cache cleared:', key);
+      });
+    });
+  }).catch((err) => {
+    console.error('Error clearing caches:', err);
+  });
+}
