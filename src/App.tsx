@@ -26,6 +26,21 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const isSameVehicle = (a: string, b: string) => {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  // Tenta extrair a placa (formato antigo ou Mercosul)
+  const placaA = a.match(/[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}/i);
+  const placaB = b.match(/[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}/i);
+  if (placaA && placaB) {
+    const limpaA = placaA[0].toUpperCase().replace('-', '');
+    const limpaB = placaB[0].toUpperCase().replace('-', '');
+    if (limpaA === limpaB) return true;
+  }
+  // Se não tem placa ou não bateu, tenta por substring
+  return a.includes(b) || b.includes(a);
+};
+
 const INITIAL_DRIVERS = [
   "Alexsandro Felipe Demétrio",
   "André Luis de Andrade",
@@ -469,7 +484,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const ref = oilReferences.find(r => r.vehicle === formData.veiculo);
+    const ref = oilReferences.find(r => isSameVehicle(r.vehicle, formData.veiculo));
     if (ref && formData.km_saida) {
       const nextKm = parseFloat(ref.km.replace(/\./g, ''));
       const currentKm = parseFloat(formData.km_saida);
@@ -883,7 +898,7 @@ export default function App() {
                     <div className="bg-black border border-zinc-800 rounded-xl p-4">
                       <p className="text-xs font-bold text-[#FFD700] uppercase tracking-widest mb-3">Próxima Troca:</p>
                       <div className="space-y-3">
-                        {oilReferences.filter(ref => ref.vehicle === fuelingData.veiculo).map(ref => {
+                        {oilReferences.filter(ref => isSameVehicle(ref.vehicle, fuelingData.veiculo)).map(ref => {
                           const nextKmStr = (ref.km || "").toString().replace(/\./g, '');
                           const nextKm = parseFloat(nextKmStr);
                           const currentKm = parseFloat(fuelingData.km || "0");
@@ -914,7 +929,7 @@ export default function App() {
                     </div>
                   )}
                   {(() => {
-                    const ref = oilReferences.find(r => r.vehicle === fuelingData.veiculo);
+                    const ref = oilReferences.find(r => isSameVehicle(r.vehicle, fuelingData.veiculo));
                     if (!ref || !fuelingData.km) return null;
                     const nextKm = parseFloat(ref.km.replace(/\./g, ''));
                     const currentKm = parseFloat(fuelingData.km.replace(/\./g, ''));
