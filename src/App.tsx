@@ -27,31 +27,29 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const INITIAL_DRIVERS = [
-  "Alexsandro Felipe Demetrio",
+  "Alexsandro Felipe Demétrio",
   "André Luis de Andrade",
-  "Gregory Matheus Maia Carnaval",
+  "Eugênia Cristina de Camargo",
   "Gustavo Oliveira de Medeiros",
-  "Hermes Augusto Martini",
-  "Joaquim Domingos",
-  "Julia de Freitas Capato",
+  "Hermes Augusto Martineli Martini",
   "Laércio Andreiov da Silva",
-  "Leonadro Mourão Santos",
-  "Patricia Aline Collebrusco Cardoso de Camargo",
-  "Michael Jones da Silva de Camargo"
+  "Michael Jones da Silva de Camargo",
+  "Patrícia Aline Collebrusco Cardoso de Camargo",
+  "Pedro Villar (Mecânico)",
+  "Raul Bonfim dos Santos"
 ].sort();
 
 const INITIAL_DRIVER_EXPIRATIONS: Record<string, string> = {
-  "Alexsandro Felipe Demetrio": "2031-09-30",
-  "André Luis de Andrade": "2024-10-17",
-  "Gregory Matheus Maia Carnaval": "2034-02-05",
+  "Alexsandro Felipe Demétrio": "2031-09-30",
+  "André Luis de Andrade": "2033-05-08",
+  "Eugênia Cristina de Camargo": "2035-01-01",
   "Gustavo Oliveira de Medeiros": "2035-01-14",
-  "Hermes Augusto Martini": "2036-01-05",
-  "Joaquim Domingos": "2024-01-01",
-  "Julia de Freitas Capato": "2026-03-26",
+  "Hermes Augusto Martineli Martini": "2036-01-05",
   "Laércio Andreiov da Silva": "2032-09-13",
-  "Leonadro Mourão Santos": "2035-05-07",
-  "Patricia Aline Collebrusco Cardoso de Camargo": "2036-02-19",
-  "Michael Jones da Silva de Camargo": "2034-04-17"
+  "Michael Jones da Silva de Camargo": "2034-04-17",
+  "Patrícia Aline Collebrusco Cardoso de Camargo": "2036-02-19",
+  "Pedro Villar (Mecânico)": "2035-01-01",
+  "Raul Bonfim dos Santos": "2035-01-21"
 };
 
 const VEHICLES = [
@@ -97,13 +95,7 @@ export default function App() {
   const [kmError, setKmError] = useState(false);
   const [kmChegadaError, setKmChegadaError] = useState(false);
 
-  const [driversList, setDriversList] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('cetec_drivers_list');
-      if (saved) return JSON.parse(saved);
-    } catch { }
-    return INITIAL_DRIVERS;
-  });
+  const [driversList, setDriversList] = useState<string[]>(INITIAL_DRIVERS);
 
   const [vehiclesList, setVehiclesList] = useState<string[]>(() => {
     try {
@@ -113,13 +105,7 @@ export default function App() {
     return VEHICLES;
   });
 
-  const [driverExpirations, setDriverExpirations] = useState<Record<string, string>>(() => {
-    try {
-      const saved = localStorage.getItem('cetec_driver_expirations');
-      if (saved) return JSON.parse(saved);
-    } catch { }
-    return INITIAL_DRIVER_EXPIRATIONS;
-  });
+  const [driverExpirations, setDriverExpirations] = useState<Record<string, string>>(INITIAL_DRIVER_EXPIRATIONS);
 
   const [oilReferences, setOilReferences] = useState<{vehicle: string, km: string}[]>(() => {
     try {
