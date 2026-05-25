@@ -832,15 +832,32 @@ export default function App() {
                       )}
                     />
                   </div>
-                  <div className="space-y-1">
-                    <select
-                      value={fuelingData.tanque_cheio}
-                      onChange={e => setFuelingData({ ...fuelingData, tanque_cheio: e.target.value })}
-                      className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
-                    >
-                      <option value="Sim">Tanque Cheio? Sim</option>
-                      <option value="Não">Tanque Cheio? Não (Parcial)</option>
-                    </select>
+                  <div className="col-span-2 space-y-2 mt-2 bg-black border border-zinc-800 p-4 rounded-xl">
+                    <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Completou o Tanque? (Até a trava)</label>
+                    <div className="flex gap-6">
+                      <label className="flex items-center gap-2 text-sm text-white font-medium cursor-pointer">
+                        <input
+                          type="radio"
+                          name="tanque_cheio"
+                          value="Sim"
+                          checked={fuelingData.tanque_cheio === "Sim"}
+                          onChange={e => setFuelingData({ ...fuelingData, tanque_cheio: e.target.value })}
+                          className="w-5 h-5 accent-[#FFD700] cursor-pointer"
+                        />
+                        Sim
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-white font-medium cursor-pointer">
+                        <input
+                          type="radio"
+                          name="tanque_cheio"
+                          value="Não"
+                          checked={fuelingData.tanque_cheio === "Não"}
+                          onChange={e => setFuelingData({ ...fuelingData, tanque_cheio: e.target.value })}
+                          className="w-5 h-5 accent-[#FFD700] cursor-pointer"
+                        />
+                        Não (Parcial)
+                      </label>
+                    </div>
                   </div>
                 </div>
                 
