@@ -224,7 +224,8 @@ export default function App() {
     motorista: "",
     veiculo: "",
     km: "",
-    litros: ""
+    litros: "",
+    tanque_cheio: "Sim"
   });
   const [fuelingLoading, setFuelingLoading] = useState(false);
   const [fuelingSuccess, setFuelingSuccess] = useState(false);
@@ -392,7 +393,7 @@ export default function App() {
 
     // Validação de média (máximo 15km/lt)
     const liters = parseFloat(fuelingData.litros);
-    if (!isInitialSet && lastKm > 0 && liters > 0) {
+    if (!isInitialSet && lastKm > 0 && liters > 0 && fuelingData.tanque_cheio === "Sim") {
       const kmTraveled = currentKm - lastKm;
       const average = kmTraveled / liters;
       if (average > 15) {
@@ -436,7 +437,7 @@ export default function App() {
       }));
 
       setFuelingSuccess(true);
-      setFuelingData({ motorista: "", veiculo: "", km: "", litros: "" });
+      setFuelingData({ motorista: "", veiculo: "", km: "", litros: "", tanque_cheio: "Sim" });
       setTimeout(() => setFuelingSuccess(false), 5000);
     } catch (error: any) {
       alert("Falha no envio: " + error.message);
@@ -816,19 +817,31 @@ export default function App() {
                       </p>
                     )}
                   </div>
-                  <input
-                    type="number"
-                    placeholder="Litros"
-                    value={fuelingData.litros}
-                    onChange={e => {
-                      setFuelingData({ ...fuelingData, litros: e.target.value });
-                      setFuelingAvgError(false);
-                    }}
-                    className={cn(
-                      "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
-                      fuelingAvgError ? "border-red-500" : "border-zinc-800"
-                    )}
-                  />
+                  <div className="space-y-1">
+                    <input
+                      type="number"
+                      placeholder="Litros"
+                      value={fuelingData.litros}
+                      onChange={e => {
+                        setFuelingData({ ...fuelingData, litros: e.target.value });
+                        setFuelingAvgError(false);
+                      }}
+                      className={cn(
+                        "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
+                        fuelingAvgError ? "border-red-500" : "border-zinc-800"
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <select
+                      value={fuelingData.tanque_cheio}
+                      onChange={e => setFuelingData({ ...fuelingData, tanque_cheio: e.target.value })}
+                      className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
+                    >
+                      <option value="Sim">Tanque Cheio? Sim</option>
+                      <option value="Não">Tanque Cheio? Não (Parcial)</option>
+                    </select>
+                  </div>
                 </div>
                 
                 {/* Troca de Óleo - Abastecimento */}
