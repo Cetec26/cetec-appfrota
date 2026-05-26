@@ -410,44 +410,10 @@ export default function App() {
       return;
     }
 
-    const rawKm = fuelingData.km.trim().toLowerCase();
-    const isInitialSet = rawKm === 'zerar' || rawKm.includes('zerar');
-    const cleanKmStr = isInitialSet ? rawKm.replace('zerar', '').trim() || "0" : rawKm;
-    const currentKm = parseFloat(cleanKmStr.replace(/\./g, ''));
-
-    const kmForTest = cleanKmStr.replace(/\./g, '');
+    const kmForTest = fuelingData.km.trim().replace(/\./g, '');
     if (!/^\d+$/.test(kmForTest)) {
-      alert("Não permitido letras, apenas números");
+      alert("KM inválido. Por favor, insira apenas números.");
       return;
-    }
-
-    const lastKm = localLastKm[fuelingData.veiculo] || 0;
-
-    // Só valida se NÃO for o comando de "memorizar primeiro abastecimento" ('zerar')
-    if (!isInitialSet && currentKm < lastKm) {
-      setFuelingKmError(true);
-      alert(`O KM de Abastecimento não pode ser menor que o último registro (${lastKm.toLocaleString('pt-BR')}).`);
-      return;
-    }
-
-    // Validação de Capacidade Máxima do Tanque
-    const liters = parseFloat(fuelingData.litros);
-    const maxCapacity = VEHICLE_TANK_CAPACITIES[fuelingData.veiculo];
-    if (maxCapacity && liters > maxCapacity) {
-      setFuelingAvgError(true);
-      alert(`O litro máximo para o veículo ${fuelingData.veiculo} é ${maxCapacity} litros. Verifique o valor lançado.`);
-      return;
-    }
-
-    // Validação de média (máximo 15km/lt)
-    if (!isInitialSet && lastKm > 0 && liters > 0 && fuelingData.tanque_cheio === "Sim") {
-      const kmTraveled = currentKm - lastKm;
-      const average = kmTraveled / liters;
-      if (average > 15) {
-        setFuelingAvgError(true);
-        alert(`Média de consumo inválida (${average.toFixed(2)} km/l). Ultrapassou o limite máximo de 15 km/l. Verifique se o KM e Litros estão corretos.`);
-        return;
-      }
     }
 
     setFuelingKmError(false);
@@ -455,9 +421,6 @@ export default function App() {
     setFuelingLoading(true);
     setFuelingSuccess(false);
     try {
-      if (!status?.scriptUrl) {
-        throw new Error("URL do Google Script não configurada.");
-      }
       const response = await fetch("/api/fueling", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -466,22 +429,16 @@ export default function App() {
           type: "abastecimento",
           usuario_logado: "Usuário",
           email_logado: "usuario@cetec.com",
-          km: cleanKmStr,
           data: formatDateToBR(getToday()),
           hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Erro na API de abastecimento.");
-      }
+      const result = await response.json().catch(() => ({}));
 
-      // Local update assumption on no-cors
-      setLocalLastKm(prev => ({
-        ...prev,
-        [fuelingData.veiculo]: currentKm
-      }));
+      if (!response.ok || result.success === false) {
+        throw new Error(result.error || "Erro na API de abastecimento.");
+      }
 
       setFuelingSuccess(true);
       setFuelingData({ motorista: "", veiculo: "", km: "", litros: "", tanque_cheio: "Sim" });
