@@ -429,7 +429,8 @@ export default function App() {
           usuario_logado: "Usuário",
           email_logado: "usuario@cetec.com",
           data: formatDateToBR(getToday()),
-          hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          tanque_cheio: "SIM"
         }),
       });
 
