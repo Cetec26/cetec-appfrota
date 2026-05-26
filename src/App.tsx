@@ -459,7 +459,8 @@ export default function App() {
   useEffect(() => {
     const ref = oilReferences.find(r => isSameVehicle(r.vehicle, formData.veiculo));
     if (ref && formData.km_saida) {
-      const nextKm = parseFloat(ref.km.replace(/\./g, ''));
+      const nextKmStr = (ref.km || "").toString().replace(/\./g, '');
+      const nextKm = parseFloat(nextKmStr);
       const currentKm = parseFloat(formData.km_saida);
       const isUrgent = !isNaN(nextKm) && currentKm > nextKm;
 
