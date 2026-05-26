@@ -906,8 +906,8 @@ export default function App() {
                   {(() => {
                     const ref = oilReferences.find(r => isSameVehicle(r.vehicle, fuelingData.veiculo));
                     if (!ref || !fuelingData.km) return null;
-                    const nextKm = parseFloat(ref.km.replace(/\./g, ''));
-                    const currentKm = parseFloat(fuelingData.km.replace(/\./g, ''));
+                    const nextKm = parseFloat((ref.km || "").toString().replace(/\./g, ''));
+                    const currentKm = parseFloat((fuelingData.km || "").toString().replace(/\./g, ''));
                     const isUrgent = !isNaN(nextKm) && currentKm > nextKm;
 
                     if (isUrgent) {
