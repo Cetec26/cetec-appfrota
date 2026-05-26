@@ -68,14 +68,14 @@ const INITIAL_DRIVER_EXPIRATIONS: Record<string, string> = {
 };
 
 const VEHICLES = [
-  "Uno AID8C51",
+  "Uno Branco AID8C51",
   "Strada Simples QPS9I59",
   "Strada CD AZL5B65",
   "Strada Endurance SDP4I02"
 ];
 
 const VEHICLE_TANK_CAPACITIES: Record<string, number> = {
-  "Uno AID8C51": 50,
+  "Uno Branco AID8C51": 50,
   "Strada Simples QPS9I59": 58,
   "Strada CD AZL5B65": 58,
   "Strada Endurance SDP4I02": 55
@@ -89,17 +89,17 @@ const CHECKLIST_ITEMS = [
 ];
 
 const LAST_KM_RECORDS: Record<string, number> = {
-  "Uno AID8C51": 305483,
-  "Strada Simples QPS9I59": 181740,
-  "Strada CD AZL5B65": 126550,
-  "Strada Endurance SDP4I02": 76000
+  "Uno Branco AID8C51": 304978,
+  "Strada Simples QPS9I59": 184528,
+  "Strada CD AZL5B65": 132455,
+  "Strada Endurance SDP4I02": 75752
 };
 
 const INITIAL_OIL_REFERENCES = [
-  { vehicle: "Uno AID8C51", km: "310.483" },
+  { vehicle: "Uno Branco AID8C51", km: "310.483" },
   { vehicle: "Strada Simples QPS9I59", km: "186.740" },
-  { vehicle: "Strada CD AZL5B65", km: "131.550" },
-  { vehicle: "Strada Endurance SDP4I02", km: "74.123" }
+  { vehicle: "Strada CD AZL5B65", km: "141.949" },
+  { vehicle: "Strada Endurance SDP4I02", km: "83.896" }
 ];
 
 const TRIP_REASONS = [
@@ -209,8 +209,14 @@ export default function App() {
       const parts = exp.split('/');
       // Assume DD/MM/YYYY format if it has slashes
       expDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`);
+    } else if (exp.includes('T')) {
+      expDate = new Date(exp);
     } else {
       expDate = new Date(exp + "T00:00:00");
+    }
+
+    if (isNaN(expDate.getTime())) {
+      return { valid: false, text: "ERRO DE DATA DE CNH" };
     }
 
     const today = new Date();
@@ -452,7 +458,7 @@ export default function App() {
       if (!status?.scriptUrl) {
         throw new Error("URL do Google Script não configurada.");
       }
-      const response = await fetch("/api/submit", {
+      const response = await fetch("/api/fueling", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
