@@ -252,8 +252,7 @@ export default function App() {
     motorista: "",
     veiculo: "",
     km: "",
-    litros: "",
-    tanque_cheio: "Sim"
+    litros: ""
   });
   const [fuelingLoading, setFuelingLoading] = useState(false);
   const [fuelingSuccess, setFuelingSuccess] = useState(false);
@@ -441,7 +440,7 @@ export default function App() {
       }
 
       setFuelingSuccess(true);
-      setFuelingData({ motorista: "", veiculo: "", km: "", litros: "", tanque_cheio: "Sim" });
+      setFuelingData({ motorista: "", veiculo: "", km: "", litros: "" });
       setTimeout(() => setFuelingSuccess(false), 5000);
     } catch (error: any) {
       alert("Falha no envio: " + error.message);
@@ -836,33 +835,6 @@ export default function App() {
                         fuelingAvgError ? "border-red-500" : "border-zinc-800"
                       )}
                     />
-                  </div>
-                  <div className="col-span-2 space-y-2 mt-2 bg-black border border-zinc-800 p-4 rounded-xl">
-                    <label className="text-[11px] font-medium text-zinc-400 uppercase tracking-tight">Completou o Tanque? (Até a trava)</label>
-                    <div className="flex gap-6">
-                      <label className="flex items-center gap-2 text-sm text-white font-medium cursor-pointer">
-                        <input
-                          type="radio"
-                          name="tanque_cheio"
-                          value="Sim"
-                          checked={fuelingData.tanque_cheio === "Sim"}
-                          onChange={e => setFuelingData({ ...fuelingData, tanque_cheio: e.target.value })}
-                          className="w-5 h-5 accent-[#FFD700] cursor-pointer"
-                        />
-                        Sim
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-white font-medium cursor-pointer">
-                        <input
-                          type="radio"
-                          name="tanque_cheio"
-                          value="Não"
-                          checked={fuelingData.tanque_cheio === "Não"}
-                          onChange={e => setFuelingData({ ...fuelingData, tanque_cheio: e.target.value })}
-                          className="w-5 h-5 accent-[#FFD700] cursor-pointer"
-                        />
-                        Não (Parcial)
-                      </label>
-                    </div>
                   </div>
                 </div>
                 
