@@ -292,6 +292,18 @@ export default function App() {
         parsed['Strada CD AZL5B65'] = 'disponivel';
         localStorage.setItem('patch_azl5b65_status_disponivel_v1', 'true');
       }
+      
+      // NOVO PATCH: Forçar Strada Simples QPS9I59 para 'em_viagem' a pedido do usuário
+      if (!localStorage.getItem('patch_qps9i59_status_em_viagem_v3')) {
+        parsed['Strada Simples QPS9I59'] = 'em_viagem';
+        localStorage.setItem('patch_qps9i59_status_em_viagem_v3', 'true');
+      }
+      // NOVO PATCH: Forçar Strada Endurance SDP4I02 para 'em_viagem' a pedido do usuário
+      if (!localStorage.getItem('patch_sdp4i02_status_em_viagem_v3')) {
+        parsed['Strada Endurance SDP4I02'] = 'em_viagem';
+        localStorage.setItem('patch_sdp4i02_status_em_viagem_v3', 'true');
+      }
+
       return parsed;
     } catch { }
     return { 
