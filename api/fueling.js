@@ -23,7 +23,18 @@ export default async function handler(req, res) {
         });
 
         const responseText = await response.text();
-        res.status(200).json({ success: true, text: responseText });
+        
+        try {
+            const result = JSON.parse(responseText);
+            if (result.success) {
+                res.status(200).json(result);
+            } else {
+                res.status(400).json({ success: false, error: result.error || "Erro desconhecido do Google Script" });
+            }
+        } catch (e) {
+            // It's probably an HTML error from Google
+            res.status(500).json({ success: false, error: "Resposta inesperada do Google Script (verifique URL e permissões).", details: responseText.substring(0, 500) });
+        }
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
