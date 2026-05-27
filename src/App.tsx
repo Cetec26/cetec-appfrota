@@ -366,6 +366,14 @@ export default function App() {
           setLocalLastKm(prev => ({ ...prev, ...data.data }));
         }
         if (data && data.success && data.status) {
+          // OVERRIDE FORÇADO PELA API: Ignorar retorno do script se a flag não foi marcada como false
+          if (localStorage.getItem('force_viagem_qps9i59_v4') !== 'false') {
+            data.status['Strada Simples QPS9I59'] = 'em_viagem';
+          }
+          if (localStorage.getItem('force_viagem_sdp4i02_v4') !== 'false') {
+            data.status['Strada Endurance SDP4I02'] = 'em_viagem';
+          }
+
           setVehicleStatus(data.status);
           localStorage.setItem('cetec_vehicle_status', JSON.stringify(data.status));
         }
@@ -705,6 +713,14 @@ export default function App() {
         ...prev,
         [formData.veiculo]: 'disponivel'
       }));
+
+      // Remover o override forçado ao completar a chegada
+      if (formData.veiculo === 'Strada Simples QPS9I59') {
+        localStorage.setItem('force_viagem_qps9i59_v4', 'false');
+      }
+      if (formData.veiculo === 'Strada Endurance SDP4I02') {
+        localStorage.setItem('force_viagem_sdp4i02_v4', 'false');
+      }
 
       // Limpa formulário após chegada
       setFormData(prev => ({
