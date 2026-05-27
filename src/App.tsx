@@ -74,12 +74,7 @@ const VEHICLES = [
   "Strada Endurance SDP4I02"
 ];
 
-const VEHICLE_TANK_CAPACITIES: Record<string, number> = {
-  "Uno Branco AID8C51": 50,
-  "Strada Simples QPS9I59": 58,
-  "Strada CD AZL5B65": 58,
-  "Strada Endurance SDP4I02": 55
-};
+
 
 const CHECKLIST_ITEMS = [
   "Nível da Água do Radiador está okay?",
@@ -257,7 +252,6 @@ export default function App() {
   const [fuelingLoading, setFuelingLoading] = useState(false);
   const [fuelingSuccess, setFuelingSuccess] = useState(false);
   const [fuelingKmError, setFuelingKmError] = useState(false);
-  const [fuelingAvgError, setFuelingAvgError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [localLastKm, setLocalLastKm] = useState<Record<string, number>>(() => {
@@ -436,7 +430,6 @@ export default function App() {
     }
 
     setFuelingKmError(false);
-    setFuelingAvgError(false);
     setFuelingLoading(true);
     setFuelingSuccess(false);
     try {
@@ -816,7 +809,6 @@ export default function App() {
                     onChange={e => {
                       setFuelingData({ ...fuelingData, veiculo: e.target.value });
                       setFuelingKmError(false); // Limpa o erro ao trocar de veículo
-                      setFuelingAvgError(false);
                     }}
                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all appearance-none"
                   >
@@ -833,21 +825,15 @@ export default function App() {
                       onChange={e => {
                         setFuelingData({ ...fuelingData, km: e.target.value });
                         setFuelingKmError(false);
-                        setFuelingAvgError(false);
                       }}
                       className={cn(
                         "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
-                        (fuelingKmError || fuelingAvgError) ? "border-red-500" : "border-zinc-800"
+                        fuelingKmError ? "border-red-500" : "border-zinc-800"
                       )}
                     />
                     {fuelingKmError && (
                       <p className="text-red-500 font-bold text-[10px] uppercase leading-tight">
                         KM INFERIOR AO ÚLTIMO INFORMADO ({localLastKm[fuelingData.veiculo]?.toLocaleString('pt-BR')})
-                      </p>
-                    )}
-                    {fuelingAvgError && (
-                      <p className="text-red-500 font-bold text-[10px] uppercase leading-tight">
-                        MÉDIA INVÁLIDA: ULTRAPASSOU 15 KM/LT. VERIFIQUE KM E LITROS.
                       </p>
                     )}
                   </div>
@@ -856,14 +842,8 @@ export default function App() {
                       type="number"
                       placeholder="Litros"
                       value={fuelingData.litros}
-                      onChange={e => {
-                        setFuelingData({ ...fuelingData, litros: e.target.value });
-                        setFuelingAvgError(false);
-                      }}
-                      className={cn(
-                        "w-full bg-black border rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all",
-                        fuelingAvgError ? "border-red-500" : "border-zinc-800"
-                      )}
+                      onChange={e => setFuelingData({ ...fuelingData, litros: e.target.value })}
+                      className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-14 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none transition-all"
                     />
                   </div>
                 </div>
