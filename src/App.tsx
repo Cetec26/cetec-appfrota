@@ -265,17 +265,36 @@ export default function App() {
   const [vehicleStatus, setVehicleStatus] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('cetec_vehicle_status');
-      return saved ? JSON.parse(saved) : {};
+      let parsed = saved ? JSON.parse(saved) : {};
+      
+      // PATCH TEMPORÁRIO PARA DESTRAVAR A STRADA ENDURANCE
+      if (!localStorage.getItem('patch_sdp4i02_status_em_viagem_v5')) {
+        parsed['Strada Endurance SDP4I02'] = 'em_viagem';
+        localStorage.setItem('patch_sdp4i02_status_em_viagem_v5', 'true');
+      }
+
+      return parsed;
     } catch { }
-    return {};
+    return {
+      'Strada Endurance SDP4I02': 'em_viagem'
+    };
   });
 
   const [vehicleDrivers, setVehicleDrivers] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('cetec_vehicle_drivers');
-      return saved ? JSON.parse(saved) : {};
+      let parsed = saved ? JSON.parse(saved) : {};
+
+      if (!localStorage.getItem('patch_sdp4i02_driver_applied_v5')) {
+        parsed['Strada Endurance SDP4I02'] = 'Alexsandro Felipe Demétrio';
+        localStorage.setItem('patch_sdp4i02_driver_applied_v5', 'true');
+      }
+
+      return parsed;
     } catch { }
-    return {};
+    return {
+      'Strada Endurance SDP4I02': 'Alexsandro Felipe Demétrio'
+    };
   });
 
   const activeFormMode = formData.veiculo && vehicleStatus[formData.veiculo] === 'em_viagem' ? 'chegada' : 'saida';
@@ -303,6 +322,9 @@ export default function App() {
           setLocalLastKm(prev => ({ ...prev, ...data.data }));
         }
         if (data && data.success && data.status) {
+          if (localStorage.getItem('force_viagem_sdp4i02_v5') !== 'false') {
+            data.status['Strada Endurance SDP4I02'] = 'em_viagem';
+          }
           setVehicleStatus(data.status);
           localStorage.setItem('cetec_vehicle_status', JSON.stringify(data.status));
         }
@@ -638,6 +660,10 @@ export default function App() {
         ...prev,
         [formData.veiculo]: 'disponivel'
       }));
+
+      if (formData.veiculo === 'Strada Endurance SDP4I02') {
+        localStorage.setItem('force_viagem_sdp4i02_v5', 'false');
+      }
 
       // Limpa formulário após chegada
       setFormData(prev => ({
