@@ -80,16 +80,13 @@ function handleGetKms() {
     if (kmC > lastKms[vName]) lastKms[vName] = kmC;
     if (kmS > lastKms[vName]) lastKms[vName] = kmS;
     
-    // Apenas a linha mais recente (com o maior kmS) ditará se está em viagem ou não.
-    // Isso evita problemas caso a planilha seja ordenada de trás pra frente.
-    if (kmS >= maxKmS[vName]) {
-      maxKmS[vName] = kmS;
-      var dataChegada = row[colDataChegada];
-      if (!dataChegada || dataChegada.toString().trim() === "") {
-        vehicleStatus[vName] = "em_viagem";
-      } else {
-        vehicleStatus[vName] = "disponivel";
-      }
+    // Como a planilha é preenchida cronologicamente (novos registros no final),
+    // a última linha lida para o veículo ditará o seu status atual.
+    var dataChegada = row[colDataChegada];
+    if (!dataChegada || dataChegada.toString().trim() === "") {
+      vehicleStatus[vName] = "em_viagem";
+    } else {
+      vehicleStatus[vName] = "disponivel";
     }
   }
   
