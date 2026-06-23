@@ -296,7 +296,7 @@ export default function App() {
 
   // Sincroniza KMs globais da frota pela API ao abrir o App
   useEffect(() => {
-    fetch("/api/kms")
+    fetch(`/api/kms?t=${new Date().getTime()}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.success && data.data) {
@@ -309,7 +309,7 @@ export default function App() {
       })
       .catch(console.error);
 
-    fetch("/api/drivers")
+    fetch(`/api/drivers?t=${new Date().getTime()}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.success && data.data) {
@@ -331,7 +331,7 @@ export default function App() {
       })
       .catch(console.error);
 
-    fetch("/api/oil")
+    fetch(`/api/oil?t=${new Date().getTime()}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.success && data.data) {
@@ -341,7 +341,7 @@ export default function App() {
       })
       .catch(console.error);
 
-    fetch("/api/vehicles")
+    fetch(`/api/vehicles?t=${new Date().getTime()}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
