@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const scriptUrl = process.env.GOOGLE_SCRIPT_URL?.trim();
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbzlHmFrDC_MIxpSgpa3_YBnjGxZVM0vitkOPSW9JHMyBwFQUtTzU8G4GnIfiWvLPDPZ/exec";
         if (!scriptUrl) {
             return res.status(400).json({ success: false, error: "URL do Google Script não configurada." });
         }

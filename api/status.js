@@ -5,7 +5,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbzlHmFrDC_MIxpSgpa3_YBnjGxZVM0vitkOPSW9JHMyBwFQUtTzU8G4GnIfiWvLPDPZ/exec";
 
     res.status(200).json({
         configOk: !!scriptUrl,
