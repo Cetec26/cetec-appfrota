@@ -265,74 +265,17 @@ export default function App() {
   const [vehicleStatus, setVehicleStatus] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('cetec_vehicle_status');
-      let parsed = saved ? JSON.parse(saved) : {};
-      // PATCH: Forçar AZL5B65 para 'em_viagem' caso o patch ainda não tenha sido aplicado
-      if (!localStorage.getItem('patch_azl5b65_status_applied')) {
-        parsed['Strada CD AZL5B65'] = 'em_viagem';
-        localStorage.setItem('patch_azl5b65_status_applied', 'true');
-      }
-      // PATCH: Forçar Strada Simples QPS9I59 para 'em_viagem' caso o patch ainda não tenha sido aplicado
-      if (!localStorage.getItem('patch_qps9i59_status_applied')) {
-        parsed['Strada Simples QPS9I59'] = 'em_viagem';
-        localStorage.setItem('patch_qps9i59_status_applied', 'true');
-      }
-      // PATCH: Forçar Strada Endurance SDP4I02 para 'em_viagem'
-      if (!localStorage.getItem('patch_sdp4i02_status_applied_v1')) {
-        parsed['Strada Endurance SDP4I02'] = 'em_viagem';
-        localStorage.setItem('patch_sdp4i02_status_applied_v1', 'true');
-      }
-      // PATCH: Forçar AZL5B65 para 'disponivel' para corrigir bug de retorno travado
-      if (!localStorage.getItem('patch_azl5b65_status_disponivel_v1')) {
-        parsed['Strada CD AZL5B65'] = 'disponivel';
-        localStorage.setItem('patch_azl5b65_status_disponivel_v1', 'true');
-      }
-      
-      // NOVO PATCH: Forçar Strada Simples QPS9I59 para 'em_viagem' a pedido do usuário
-      if (!localStorage.getItem('patch_qps9i59_status_em_viagem_v3')) {
-        parsed['Strada Simples QPS9I59'] = 'em_viagem';
-        localStorage.setItem('patch_qps9i59_status_em_viagem_v3', 'true');
-      }
-      // NOVO PATCH: Forçar Strada Endurance SDP4I02 para 'em_viagem' a pedido do usuário
-      if (!localStorage.getItem('patch_sdp4i02_status_em_viagem_v3')) {
-        parsed['Strada Endurance SDP4I02'] = 'em_viagem';
-        localStorage.setItem('patch_sdp4i02_status_em_viagem_v3', 'true');
-      }
-
-      return parsed;
+      return saved ? JSON.parse(saved) : {};
     } catch { }
-    return { 
-      'Strada CD AZL5B65': 'em_viagem',
-      'Strada Simples QPS9I59': 'em_viagem',
-      'Strada Endurance SDP4I02': 'em_viagem'
-    };
+    return {};
   });
 
   const [vehicleDrivers, setVehicleDrivers] = useState<Record<string, string>>(() => {
     try {
       const saved = localStorage.getItem('cetec_vehicle_drivers');
-      let parsed = saved ? JSON.parse(saved) : {};
-      // PATCH: Definir Gustavo como motorista deste veículo caso o patch ainda não tenha sido aplicado
-      if (!localStorage.getItem('patch_azl5b65_driver_applied')) {
-        parsed['Strada CD AZL5B65'] = 'Gustavo Oliveira de Medeiros';
-        localStorage.setItem('patch_azl5b65_driver_applied', 'true');
-      }
-      // PATCH: Definir Raul como motorista deste veículo caso o patch ainda não tenha sido aplicado
-      if (!localStorage.getItem('patch_qps9i59_driver_applied')) {
-        parsed['Strada Simples QPS9I59'] = 'Raul Bonfim dos Santos';
-        localStorage.setItem('patch_qps9i59_driver_applied', 'true');
-      }
-      // PATCH: Definir Alexsandro para a Strada Endurance
-      if (!localStorage.getItem('patch_sdp4i02_driver_applied_v1')) {
-        parsed['Strada Endurance SDP4I02'] = 'Alexsandro Felipe Demétrio';
-        localStorage.setItem('patch_sdp4i02_driver_applied_v1', 'true');
-      }
-      return parsed;
+      return saved ? JSON.parse(saved) : {};
     } catch { }
-    return { 
-      'Strada CD AZL5B65': 'Gustavo Oliveira de Medeiros',
-      'Strada Simples QPS9I59': 'Raul Bonfim dos Santos',
-      'Strada Endurance SDP4I02': 'Alexsandro Felipe Demétrio'
-    };
+    return {};
   });
 
   const activeFormMode = formData.veiculo && vehicleStatus[formData.veiculo] === 'em_viagem' ? 'chegada' : 'saida';
@@ -360,14 +303,6 @@ export default function App() {
           setLocalLastKm(prev => ({ ...prev, ...data.data }));
         }
         if (data && data.success && data.status) {
-          // OVERRIDE FORÇADO PELA API: Ignorar retorno do script se a flag não foi marcada como false
-          if (localStorage.getItem('force_viagem_qps9i59_v4') !== 'false') {
-            data.status['Strada Simples QPS9I59'] = 'em_viagem';
-          }
-          if (localStorage.getItem('force_viagem_sdp4i02_v4') !== 'false') {
-            data.status['Strada Endurance SDP4I02'] = 'em_viagem';
-          }
-
           setVehicleStatus(data.status);
           localStorage.setItem('cetec_vehicle_status', JSON.stringify(data.status));
         }
@@ -703,14 +638,6 @@ export default function App() {
         ...prev,
         [formData.veiculo]: 'disponivel'
       }));
-
-      // Remover o override forçado ao completar a chegada
-      if (formData.veiculo === 'Strada Simples QPS9I59') {
-        localStorage.setItem('force_viagem_qps9i59_v4', 'false');
-      }
-      if (formData.veiculo === 'Strada Endurance SDP4I02') {
-        localStorage.setItem('force_viagem_sdp4i02_v4', 'false');
-      }
 
       // Limpa formulário após chegada
       setFormData(prev => ({
