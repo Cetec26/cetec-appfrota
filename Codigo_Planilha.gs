@@ -273,23 +273,32 @@ function handleChegada(body) {
 }
 
 function handleAbastecimento(body) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Abastecimento");
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Abastecimento") || ss.getSheetByName("Abastecimentos");
+  
   if (!sheet) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Aba 'Abastecimento' não encontrada." }))
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Aba 'Abastecimento' (ou 'Abastecimentos') não encontrada." }))
       .setMimeType(ContentService.MimeType.JSON);
   }
   
   sheet.appendRow([
     body.data,
     body.hora,
-    body.motorista,
     body.veiculo,
     body.km,
     body.litros,
+    "", // Coluna F: Media KM (será substituída por fórmula abaixo)
+    body.motorista,
     body.tanque_cheio,
     body.usuario_logado,
     body.email_logado
   ]);
+  
+  // Insere a fórmula na Coluna F (Media KM Por Litros)
+  var lastRow = sheet.getLastRow();
+  var prevRow = lastRow - 1;
+  var formula = '=SE(C' + lastRow + '=""; ""; SE(CONT.SE(C$2:C' + lastRow + '; C' + lastRow + ')=1; "1º Abast."; (D' + lastRow + ' - MAXIFS(D$1:D' + prevRow + '; C$1:C' + prevRow + '; C' + lastRow + ')) / E' + lastRow + '))';
+  sheet.getRange(lastRow, 6).setFormula(formula);
   
   return ContentService.createTextOutput(JSON.stringify({ success: true }))
       .setMimeType(ContentService.MimeType.JSON);
